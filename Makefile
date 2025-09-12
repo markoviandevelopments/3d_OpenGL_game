@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -g
 LDFLAGS = -lglut -lGL -lGLU
-TARGET = move_square
-SOURCES = move_square.c
+TARGET = game
+SOURCES = game.c
 OBJECTS = $(SOURCES:.c=.o)
 
 all: $(TARGET)
