@@ -2,13 +2,18 @@
 #include <stdio.h>
 
 // Rotation angles for the cube
-float rotateX = 10.0f;
-float rotateY = -130.0f;
+float rotateX = 55.0f;
+float rotateY = -150.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
+const int FPS = 60; // Target frames per second
+const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
 
-float posX = -9.1f;
-float posY = -6.0f;
-float posZ = -3.6f;
+float posX = -12.4f;
+float posY = -7.4f;
+float posZ = -5.4f;
+
+float cubeX = 1.0f;
+float cubeY = 1.0f;
 
 void drawCube(float x, float y, float z, int t) {
 
@@ -57,6 +62,111 @@ void drawCube(float x, float y, float z, int t) {
     glEnd();
 }
 
+void drawSolidCube(float x, float y, float z, float r, float g, float b, float a)
+{
+
+
+
+    glBegin(GL_QUADS);
+    glColor4f(r,g,b,a);
+    // Front face
+    glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
+    // Back face
+    glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
+    // Top face
+    glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
+    // Bottom face
+    glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
+    // Right face
+    glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
+    // Left face
+    glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+    glEnd();
+
+
+    glBegin(GL_LINES);
+    glColor3f(0.0f, 0.0f, 0.0f); // Black edges for contrast
+    // Front face edges
+    glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
+    
+    glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
+    
+    glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
+    
+    glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
+    
+    // Back face edges
+    glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
+    
+    glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
+    
+    glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+    
+    glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+    glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
+    
+    // Connecting edges (front to back)
+    glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
+    
+    glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
+    
+    glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
+    
+    glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
+    glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+    glEnd();
+}
+
+
+
+void physics() {
+    float dx = (((float) (rand() % 1000) ) / 1000.0f - 0.5f) * 2.0f * 0.01f;
+    float dy = (((float) (rand() % 1000) ) / 1000.0f - 0.5f) * 2.0f * 0.01f;
+    cubeX += dx;
+    cubeY += dy;
+
+    if (cubeX > 8.0f){
+        cubeX = 8.0f;
+    }
+    if (cubeY > 8.0f){
+        cubeY = 8.0f;
+    }
+    if (cubeX < 0.0f){
+        cubeX = 0.0f;
+    }
+    if (cubeY < 0.0f){
+        cubeY = 0.0f;
+    }
+}
+
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
@@ -71,6 +181,8 @@ void display() {
     float z=0.0f;
     int t=0;
 
+    
+
     for (float x=0.0f;x<=8.0f;x+=1.0f) {
         for (float y=0.0f;y<=8.0f;y+=1.0f){
             drawCube(x, y, z, t);
@@ -79,8 +191,20 @@ void display() {
         }
         //t = 1 - t;
     }
+
+    glDepthMask(GL_FALSE); // Disable depth writing for transparency
+    drawSolidCube(cubeX,cubeY,1.05f,0.5f,0.5f,1.0f, 0.5f);
+    glDepthMask(GL_TRUE); // Re-enable depth writing
+
+    physics();
+
     glutSwapBuffers();
     
+}
+
+void timer(int value) {
+    glutPostRedisplay(); // Request redraw
+    glutTimerFunc(FRAME_INTERVAL_MS, timer, 0); // Schedule next timer
 }
 
 void specialKeys(int key, int x, int y) {
@@ -137,8 +261,9 @@ void keyboard(unsigned char key, int x, int y) {
 
 void init() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
-    glEnable(GL_DEPTH_TEST); // Enable depth testing for 3D
-    // Set up projection matrix
+    glEnable(GL_DEPTH_TEST); // Enable depth testing
+    glEnable(GL_BLEND); // Enable blending
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set blend function
     glMatrixMode(GL_PROJECTION);
     gluPerspective(45.0f, 1.0f, 0.1f, 100.0f); // FOV, aspect, near, far
     glMatrixMode(GL_MODELVIEW);
@@ -162,6 +287,7 @@ int main(int argc, char** argv) {
     glutReshapeFunc(reshape);
     glutSpecialFunc(specialKeys);
     glutKeyboardFunc(keyboard);
+    glutTimerFunc(0, timer, 0);
     glutMainLoop();
     return 0;
 }
