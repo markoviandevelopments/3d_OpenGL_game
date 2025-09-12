@@ -1,5 +1,11 @@
 #include <GL/glut.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <arpa/inet.h>
 
 // Rotation angles for the cube
 float rotateX = 55.0f;
@@ -14,6 +20,8 @@ float posZ = -5.4f;
 
 float cubeX = 1.0f;
 float cubeY = 1.0f;
+
+int client_sock; // Global client socket
 
 void drawCube(float x, float y, float z, int t) {
 
@@ -147,25 +155,6 @@ void drawSolidCube(float x, float y, float z, float r, float g, float b, float a
 
 
 
-void physics() {
-    float dx = (((float) (rand() % 1000) ) / 1000.0f - 0.5f) * 2.0f * 0.01f;
-    float dy = (((float) (rand() % 1000) ) / 1000.0f - 0.5f) * 2.0f * 0.01f;
-    cubeX += dx;
-    cubeY += dy;
-
-    if (cubeX > 8.0f){
-        cubeX = 8.0f;
-    }
-    if (cubeY > 8.0f){
-        cubeY = 8.0f;
-    }
-    if (cubeX < 0.0f){
-        cubeX = 0.0f;
-    }
-    if (cubeY < 0.0f){
-        cubeY = 0.0f;
-    }
-}
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -196,13 +185,25 @@ void display() {
     drawSolidCube(cubeX,cubeY,1.05f,0.5f,0.5f,1.0f, 0.5f);
     glDepthMask(GL_TRUE); // Re-enable depth writing
 
-    physics();
-
     glutSwapBuffers();
     
 }
 
 void timer(int value) {
+    // Receive position from server (non-blocking)
+    float pos[2];
+    int ret = recv(client_sock, pos, sizeof(float) * 2, 0);
+    if (ret == sizeof(float) * 2) {
+        cubeX = pos[0];
+        cubeY = pos[1];
+    } else if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN) {
+        perror("recv");
+    }
+
+    // Send buffer back to server
+    int buffer = 1;
+    send(client_sock, &buffer, sizeof(int), 0);
+
     glutPostRedisplay(); // Request redraw
     glutTimerFunc(FRAME_INTERVAL_MS, timer, 0); // Schedule next timer
 }
@@ -278,6 +279,26 @@ void reshape(int w, int h) {
 }
 
 int main(int argc, char** argv) {
+    // Create client socket and connect to server
+    client_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_sock < 0) {
+        perror("socket");
+        return 1;
+    }
+
+    struct sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8042);
+    server_addr.sin_addr.s_addr = inet_addr("192.168.1.126");
+
+    if (connect(client_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("connect");
+        return 1;
+    }
+
+    // Set non-blocking
+    fcntl(client_sock, F_SETFL, O_NONBLOCK);
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 800);
@@ -289,5 +310,7 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboard);
     glutTimerFunc(0, timer, 0);
     glutMainLoop();
+
+    close(client_sock);
     return 0;
 }

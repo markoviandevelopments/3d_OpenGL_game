@@ -1,19 +1,16 @@
 CC = gcc
 CFLAGS = -Wall -g
-LDFLAGS = -lglut -lGL -lGLU
-TARGET = game
-SOURCES = game.c
-OBJECTS = $(SOURCES:.c=.o)
+GL_LDFLAGS = -lglut -lGL -lGLU
 
-all: $(TARGET)
+all: server client
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
+server: server.c
+	$(CC) $(CFLAGS) server.c -o server
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+client: game.c
+	$(CC) $(CFLAGS) game.c -o client $(GL_LDFLAGS)
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	rm -f server client
 
 .PHONY: all clean
