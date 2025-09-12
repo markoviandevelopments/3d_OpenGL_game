@@ -11,7 +11,7 @@
 float rotateX = 55.0f;
 float rotateY = -150.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
-const int FPS = 60; // Target frames per second
+const int FPS = 20; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
 
 float posX = -12.4f;
@@ -22,6 +22,8 @@ float cubeX = 1.0f;
 float cubeY = 1.0f;
 
 int client_sock; // Global client socket
+
+int message = 1;
 
 void drawCube(float x, float y, float z, int t) {
 
@@ -201,8 +203,9 @@ void timer(int value) {
     }
 
     // Send buffer back to server
-    int buffer = 1;
+    int buffer = message;
     send(client_sock, &buffer, sizeof(int), 0);
+    message = 1;
 
     glutPostRedisplay(); // Request redraw
     glutTimerFunc(FRAME_INTERVAL_MS, timer, 0); // Schedule next timer
@@ -254,6 +257,19 @@ void keyboard(unsigned char key, int x, int y) {
     }
     if (key == 'm') {
         printf("Rotate X: %f\tRotate Y: %f\tX: %f\tY: %f\tZ: %f\n",rotateX,rotateY,posX,posY,posZ);
+    }
+    if (key == 'n') {
+        message = 2;
+    } else if(key == 'j') {
+        message = 3;
+    } else if(key == 'i') {
+        message = 4;
+    } else if(key == 'l') {
+        message = 5;
+    } else if(key == 'k') {
+        message = 6;
+    } else {
+        message = 1;
     }
     if (key == 27) { // Escape key to exit
         exit(0);

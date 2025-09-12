@@ -13,14 +13,40 @@
 
 #define PORT 8042
 #define MAX_CLIENTS 10
-#define FPS 60
+#define FPS 20
 
 float cubeX = 1.0f;
 float cubeY = 1.0f;
+float speed = 0.05f;
+
+int message = 1;
+int prev_message = 1;
 
 void physics() {
-    float dx = (((float) (rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * 0.01f;
-    float dy = (((float) (rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * 0.01f;
+    
+
+    if (message == 2) {
+        speed = 0.5f;
+    } else {
+        speed = 0.01f;
+    }
+
+    float dx = (((float) (rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * speed;
+    float dy = (((float) (rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * speed;
+
+    if (message == 3) {
+        dx = -0.1f;
+    }
+    if (message == 4) {
+        dy = 0.1f;
+    }
+    if (message == 5) {
+        dx = 0.1f;
+    }
+    if (message == 6) {
+        dy = -0.1f;
+    }
+    
     cubeX += dx;
     cubeY += dy;
 
@@ -122,6 +148,11 @@ int main() {
                     // Receive buffer (ignore content for now)
                     int buffer;
                     int ret = recv(sock, &buffer, sizeof(int), 0);
+                    message = buffer;
+                    if (buffer != prev_message) {
+                        printf("Recieved: %d\n", buffer);
+                    }
+                    prev_message = message;
                     if (ret == 0 || (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)) {
                         close(sock);
                         client_sockets[i] = 0;
