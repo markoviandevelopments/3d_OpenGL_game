@@ -8,8 +8,11 @@
 #include <arpa/inet.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
+#include <float.h>
 
 //#define M_PI 3.14159265358979
+GLuint objList = 0;
 
 // Rotation angles for the cube
 float rotateX = 920.0f;
@@ -42,8 +45,8 @@ int last_fps_time = 0;
 void drawCube(float x, float y, float z, int t)
 {
     // Alternate between yellow and cyan based on t
-    float r = t ? 1.0f : 0.0f; // Yellow (1,1,0) or Cyan (0,1,1)
-    float g = 1.0f;
+    float r = 1.0f;
+    float g = t ? 0.0f : 1.0f;
     float b = t ? 0.0f : 1.0f;
 
     glBegin(GL_QUADS);
@@ -178,6 +181,160 @@ void drawSolidCube(float x, float y, float z, float r, float g, float b, float a
     glEnable(GL_LIGHTING);
 }
 
+void loadOBJ(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        printf("Error: Cannot open OBJ file %s\n", filename);
+        return;
+    }
+
+    float vertices[10000][3]; // Up to 10000 vertices
+    float normals[10000][3];  // Up to 10000 normals
+    int numVertices = 0;
+    int numNormals = 0;
+    int faces[10000][6]; // Up to 10000 faces (v1/n1, v2/n2, v3/n3)
+    int numFaces = 0;
+
+    char line[256];
+    while (fgets(line, sizeof(line), file))
+    {
+        // Remove trailing newline
+        line[strcspn(line, "\n")] = 0;
+
+        if (strncmp(line, "v ", 2) == 0)
+        {
+            if (numVertices >= 10000)
+            {
+                printf("Error: Too many vertices (max 10000)\n");
+                fclose(file);
+                return;
+            }
+            if (sscanf(line + 2, "%f %f %f", &vertices[numVertices][0], &vertices[numVertices][1], &vertices[numVertices][2]) == 3)
+            {
+                numVertices++;
+            }
+            else
+            {
+                printf("Error: Invalid vertex format: %s\n", line);
+            }
+        }
+        else if (strncmp(line, "vn ", 3) == 0)
+        {
+            if (numNormals >= 10000)
+            {
+                printf("Error: Too many normals (max 10000)\n");
+                fclose(file);
+                return;
+            }
+            if (sscanf(line + 3, "%f %f %f", &normals[numNormals][0], &normals[numNormals][1], &normals[numNormals][2]) == 3)
+            {
+                numNormals++;
+            }
+            else
+            {
+                printf("Error: Invalid normal format: %s\n", line);
+            }
+        }
+        else if (strncmp(line, "f ", 2) == 0)
+        {
+            if (numFaces >= 10000)
+            {
+                printf("Error: Too many faces (max 10000)\n");
+                fclose(file);
+                return;
+            }
+            int v1, n1, v2, n2, v3, n3;
+            // Try parsing with vertex/normal format (f v1//n1 v2//n2 v3//n3)
+            if (sscanf(line + 2, "%d//%d %d//%d %d//%d", &v1, &n1, &v2, &n2, &v3, &n3) == 6)
+            {
+                // Validate indices
+                if (v1 < 1 || v1 > numVertices || n1 < 1 || n1 > numNormals ||
+                    v2 < 1 || v2 > numVertices || n2 < 1 || n2 > numNormals ||
+                    v3 < 1 || v3 > numVertices || n3 < 1 || n3 > numNormals)
+                {
+                    printf("Error: Invalid face indices: %s\n", line);
+                    continue;
+                }
+                faces[numFaces][0] = v1 - 1; // Convert to 0-based
+                faces[numFaces][1] = n1 - 1;
+                faces[numFaces][2] = v2 - 1;
+                faces[numFaces][3] = n2 - 1;
+                faces[numFaces][4] = v3 - 1;
+                faces[numFaces][5] = n3 - 1;
+                numFaces++;
+            }
+            else if (sscanf(line + 2, "%d %d %d", &v1, &v2, &v3) == 3)
+            {
+                // Handle faces without normals (f v1 v2 v3)
+                if (v1 < 1 || v1 > numVertices || v2 < 1 || v2 > numVertices || v3 < 1 || v3 > numVertices)
+                {
+                    printf("Error: Invalid face indices (no normals): %s\n", line);
+                    continue;
+                }
+                faces[numFaces][0] = v1 - 1;
+                faces[numFaces][1] = 0; // Dummy normal index
+                faces[numFaces][2] = v2 - 1;
+                faces[numFaces][3] = 0;
+                faces[numFaces][4] = v3 - 1;
+                faces[numFaces][5] = 0;
+                numFaces++;
+            }
+            else
+            {
+                printf("Error: Unsupported face format: %s\n", line);
+            }
+        }
+    }
+    fclose(file);
+
+    if (numVertices == 0 || numFaces == 0)
+    {
+        printf("Error: Invalid OBJ file %s (no vertices or faces)\n", filename);
+        return;
+    }
+
+    // Create display list
+    objList = glGenLists(1);
+    if (objList == 0)
+    {
+        printf("Error: Failed to create display list\n");
+        return;
+    }
+    glNewList(objList, GL_COMPILE);
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < numFaces; i++)
+    {
+        int v1 = faces[i][0], n1 = faces[i][1];
+        int v2 = faces[i][2], n2 = faces[i][3];
+        int v3 = faces[i][4], n3 = faces[i][5];
+
+        // If normals are present, use them; otherwise, skip (for faces without normals)
+        if (n1 > 0 && n2 > 0 && n3 > 0)
+        {
+            glNormal3f(normals[n1][0], normals[n1][1], normals[n1][2]);
+        }
+        glVertex3f(vertices[v1][0], vertices[v1][1], vertices[v1][2]);
+
+        if (n2 > 0)
+        {
+            glNormal3f(normals[n2][0], normals[n2][1], normals[n2][2]);
+        }
+        glVertex3f(vertices[v2][0], vertices[v2][1], vertices[v2][2]);
+
+        if (n3 > 0)
+        {
+            glNormal3f(normals[n3][0], normals[n3][1], normals[n3][2]);
+        }
+        glVertex3f(vertices[v3][0], vertices[v3][1], vertices[v3][2]);
+    }
+    glEnd();
+    glEndList();
+
+    printf("Loaded OBJ: %d vertices, %d normals, %d faces\n", numVertices, numNormals, numFaces);
+}
+
 void display()
 {
     current_time = glutGet(GLUT_ELAPSED_TIME);
@@ -198,18 +355,15 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     // Set camera position
-    float dx1 = (float) cos(((double) rotateY) / 360.0 * M_PI);
-    float dy1 = (float) sin(((double) rotateY) / 360.0 * M_PI);
-    float dz1 = (float) cos(((double) rotateX) / 360.0 * M_PI);
-    gluLookAt(posX,posY, posZ,// Eye position
-              posX + dx1, posY + dy1, posZ + dz1,  // Look at origin
-              0.0f, 0.0f, 1.0f); // Up vector
-    // Apply rotation
-    //glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
-    //glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
+    float dx1 = (float)cos(((double)rotateY) / 360.0 * M_PI);
+    float dy1 = (float)sin(((double)rotateY) / 360.0 * M_PI);
+    float dz1 = (float)cos(((double)rotateX) / 360.0 * M_PI);
+    gluLookAt(posX, posY, posZ,
+              posX + dx1, posY + dy1, posZ + dz1,
+              0.0f, 0.0f, 1.0f);
 
-    // Set light position after camera transformations
-    GLfloat light_position[] = {4.0f, 4.0f, 10.0f, 0.0f}; // Directional light above checkerboard center
+    // Set light position
+    GLfloat light_position[] = {4.0f, 4.0f, 10.0f, 0.0f};
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     // Draw checkerboard
@@ -227,6 +381,22 @@ void display()
 
     // Draw player cube
     drawSolidCube(cubeX, cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
+
+    // Draw OBJ model
+    if (objList != 0)
+    {
+        glPushMatrix();
+        glTranslatef(6.0f, 6.0f, 1.0f);     // Move up y-axis (from 4.0f to 5.0f)
+        glScalef(0.025f, 0.025f, 0.025f);   // 1/4 of previous scale (0.1f)
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Static 90-degree rotation around x-axis
+        glColor3f(0.0f, 0.0f, 1.0f);        // Blue for visibility
+        GLfloat obj_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+        GLfloat obj_shininess[] = {100.0f};
+        glMaterialfv(GL_FRONT, GL_SPECULAR, obj_specular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, obj_shininess);
+        glCallList(objList);
+        glPopMatrix();
+    }
 
     glutSwapBuffers();
 }
@@ -352,16 +522,14 @@ void keyboard(unsigned char key, int x, int y)
 
 void init()
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);              // Black background
-    glEnable(GL_DEPTH_TEST);                           // Enable depth testing
-    glEnable(GL_BLEND);                                // Enable blending
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set blend function
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Enable lighting
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
-    // Define light properties (no position here)
     GLfloat light_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
     GLfloat light_diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
     GLfloat light_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -378,8 +546,11 @@ void init()
     glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
 
     glMatrixMode(GL_PROJECTION);
-    gluPerspective(45.0f, 1.0f, 0.1f, 100.0f); // FOV, aspect, near, far
+    gluPerspective(45.0f, 1.0f, 0.1f, 100.0f);
     glMatrixMode(GL_MODELVIEW);
+
+    // Load OBJ model after OpenGL setup
+    loadOBJ("assets/eprod.obj");
 }
 
 void reshape(int w, int h)
@@ -424,6 +595,11 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboard);
     glutTimerFunc(0, timer, 0);
     glutMainLoop();
+
+    if (objList != 0)
+    {
+        glDeleteLists(objList, 1);
+    }
 
     close(client_sock);
     return 0;
