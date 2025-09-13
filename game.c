@@ -294,16 +294,16 @@ void keyboard(unsigned char key, int x, int y)
     }
     if (key == 'a')
     {
-        posX += (float) 0.1 * cos(((double) rotateY + 90.0) / 360.0 * M_PI);
-        posY += (float) 0.1 * sin(((double) rotateY + 90.0) / 360.0 * M_PI);
-        posZ += (float) 0.1 * cos(((double) rotateX + 90.0) / 360.0 * M_PI);
+        posX += (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posY += (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posZ += (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
         display();
     }
     if (key == 'd')
     {
-        posX -= (float) 0.1 * cos(((double) rotateY + 90.0) / 360.0 * M_PI);
-        posY -= (float) 0.1 * sin(((double) rotateY + 90.0) / 360.0 * M_PI);
-        posZ -= (float) 0.1 * cos(((double) rotateX + 90.0) / 360.0 * M_PI);
+        posX -= (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posY -= (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posZ -= (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
         display();
     }
     if (key == 'q')
