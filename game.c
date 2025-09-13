@@ -460,10 +460,13 @@ void timer(int value)
     if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
     {
         perror("recvfrom");
+    } else {
+        cubeX = servermessage.browniancube[0];
+        cubeY = servermessage.browniancube[1];
     }
 
     // Send buffer back to server
-    clientmessage.command = 1;
+    clientmessage.command = message;
     clientmessage.position.x = posX;
     clientmessage.position.y = posY;
     clientmessage.position.z = posZ;
@@ -628,7 +631,7 @@ int main(int argc, char **argv)
     server_addr.sin_addr.s_addr = inet_addr("192.168.1.126"); // Your server IP
 
     // Send initial buffer to register with server
-    clientmessage.command =1;
+    clientmessage.command = 1;
     clientmessage.position.x = posX;
     clientmessage.position.y = posY;
     clientmessage.position.z = posZ;
