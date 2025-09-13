@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
+#define NUM_PARTICLES 150
+
 // Rotation angles for the cube
 float rotateX = 55.0f;
 float rotateY = -150.0f;
@@ -34,6 +36,15 @@ int current_time = 0;
 float avg_frame_time = 0.0f;
 int fps_counter = 0;
 int last_fps_time = 0;
+
+typedef struct
+{
+    float x, y, z;    // Position
+    float vx, vy, vz; // Velocity
+    float life;       // Lifetime (0.0 to 1.0)
+} Particle;
+
+Particle particles[NUM_PARTICLES];
 
 void drawCube(float x, float y, float z, int t) {
 
@@ -84,8 +95,6 @@ void drawCube(float x, float y, float z, int t) {
 
 void drawSolidCube(float x, float y, float z, float r, float g, float b, float a)
 {
-
-
 
     glBegin(GL_QUADS);
     glColor4f(r,g,b,a);
@@ -209,7 +218,11 @@ void display() {
         //t = 1 - t;
     }
 
-    glDepthMask(GL_FALSE); // Disable depth writing for transparency
+    glDepthMask(GL_FALSE);
+    glEnable(GL_POINT_SMOOTH); // Smooth points
+    glPointSize(3.0f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     drawSolidCube(cubeX,cubeY,1.05f,0.5f,0.5f,1.0f, 0.5f);
     glDepthMask(GL_TRUE); // Re-enable depth writing
 
@@ -234,6 +247,25 @@ void timer(int value) {
     int buffer = message;
     sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&server_addr, addr_len);
     message = 1;
+
+    // Update particles
+    for (int i = 0; i < NUM_PARTICLES; i++) {
+        particles[i].x += particles[i].vx;
+        particles[i].y += particles[i].vy;
+        particles[i].z += particles[i].vz;
+        particles[i].life -= 0.005f;  // Fade out slowly
+
+        // Respawn if dead or out of bounds
+        if (particles[i].life <= 0.0f || particles[i].x < 0 || particles[i].x > 8 || particles[i].y < 0 || particles[i].y > 8 || particles[i].z < 0.5f || particles[i].z > 3.0f) {
+            particles[i].x = (rand() % 80) / 10.0f;
+            particles[i].y = (rand() % 80) / 10.0f;
+            particles[i].z = (rand() % 20) / 10.0f + 0.5f;
+            particles[i].vx = ((rand() % 10) - 5) / 50.0f;
+            particles[i].vy = ((rand() % 10) - 5) / 50.0f;
+            particles[i].vz = ((rand() % 5) - 2.5f) / 100.0f;
+            particles[i].life = 1.0f;
+        }
+    }
 
     glutPostRedisplay(); // Request redraw
     glutTimerFunc(FRAME_INTERVAL_MS, timer, 0); // Schedule next timer
@@ -312,6 +344,17 @@ void init() {
     glMatrixMode(GL_PROJECTION);
     gluPerspective(45.0f, 1.0f, 0.1f, 100.0f); // FOV, aspect, near, far
     glMatrixMode(GL_MODELVIEW);
+    srand(time(NULL)); // Seed random
+    for (int i = 0; i < NUM_PARTICLES; i++)
+    {
+        particles[i].x = (rand() % 80) / 10.0f;        // Random x in 0-8
+        particles[i].y = (rand() % 80) / 10.0f;        // Random y in 0-8
+        particles[i].z = (rand() % 20) / 10.0f + 0.5f; // Slightly above ground
+        particles[i].vx = ((rand() % 10) - 5) / 50.0f; // Small random velocity
+        particles[i].vy = ((rand() % 10) - 5) / 50.0f;
+        particles[i].vz = ((rand() % 5) - 2.5f) / 100.0f; // Gentle up/down
+        particles[i].life = (rand() % 100) / 100.0f;      // Random start life
+    }
 }
 
 void reshape(int w, int h) {
