@@ -280,10 +280,10 @@ void timer(int value) {
 void specialKeys(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_UP:    // Rotate up
-            rotateX += rotateSpeed;
+            rotateX -= rotateSpeed;
             break;
         case GLUT_KEY_DOWN:  // Rotate down
-            rotateX -= rotateSpeed;
+            rotateX += rotateSpeed;
             break;
         case GLUT_KEY_LEFT:  // Rotate left
             rotateY += rotateSpeed;
