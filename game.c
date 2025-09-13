@@ -396,14 +396,26 @@ void display()
     // Draw checkerboard
     float z = -0.5f;
     int t = 0;
-    for (float x = 0.0f; x <= 8.0f; x += 1.0f)
+    for (float x = 0.0f; x <= 20.0f; x += 1.0f)
     {
         t = (int)x % 2;
-        for (float y = 0.0f; y <= 8.0f; y += 1.0f)
+        for (float y = 0.0f; y <= 20.0f; y += 1.0f)
         {
-            drawCube(x, y, z, t);
+            double dx = (double) (x - 10.0f);
+            double dy = (double) (y - 10.0f);
+            double dist = sqrt(dx*dx + dy*dy);
+            if (dist < 10.0) {
+                drawCube(x, y, z, t);
+            }
+            
             t = 1 - t;
         }
+    }
+
+    for (double a=0;a<2.0 * M_PI;a+=.1) {
+        float x = 10.0f * ((float) cos(a)) + 10.0f;
+        float y = 10.0f * ((float) sin(a)) + 10.0f;
+        drawSolidCube(x,y,0.5f,1.0f,0.5f,0.0f,0.5f);
     }
 
     
