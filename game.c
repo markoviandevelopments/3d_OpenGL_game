@@ -226,7 +226,7 @@ void display()
     }
 
     // Draw player cube
-    drawSolidCube(cubeX, cubeY, 1.05f, 0.5f, 0.5f, 1.0f, 0.5f);
+    drawSolidCube(cubeX, cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
 
     glutSwapBuffers();
 }
