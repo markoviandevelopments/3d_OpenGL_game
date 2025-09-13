@@ -2,6 +2,7 @@
     "files.associations": {
         "inet.h": "c",
         "errno.h": "c",
-        "in.h": "c"
+        "in.h": "c",
+        "string.h": "c"
     }
 }

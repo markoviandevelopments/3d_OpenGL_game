@@ -9,11 +9,12 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
-#include <time.h> // For rand()
+#include <time.h> // For rand() and time()
 
 #define PORT 8042
 #define MAX_CLIENTS 10
-#define FPS 20
+#define FPS 60
+#define CLIENT_TIMEOUT_SEC 5 // Timeout inactive clients after 5 seconds
 
 float cubeX = 1.0f;
 float cubeY = 1.0f;
@@ -21,6 +22,18 @@ float speed = 0.05f;
 
 int message = 1;
 int prev_message = 1;
+
+
+// Client tracking struct
+struct Client {
+    struct sockaddr_in addr;
+    time_t last_seen;
+};
+
+struct Client clients[MAX_CLIENTS];
+int num_clients = 0;
+
+
 
 void physics() {
     
@@ -56,16 +69,27 @@ void physics() {
     if (cubeY < 0.0f) cubeY = 0.0f;
 }
 
+// Check if client address already exists
+int client_exists(struct sockaddr_in *new_addr) {
+    for (int i = 0; i < num_clients; i++) {
+        if (memcmp(&clients[i].addr, new_addr, sizeof(struct sockaddr_in)) == 0) {
+            return i; // Return index if found
+        }
+    }
+    return -1;
+}
+
 int main() {
-    int server_sock, client_sockets[MAX_CLIENTS] = {0};
-    struct sockaddr_in addr;
+    int server_sock;
+    struct sockaddr_in addr, client_addr;
+    socklen_t addr_len = sizeof(client_addr);
     fd_set read_fds;
-    int max_fd, num_clients = 0;
+    int max_fd;
 
     srand(time(NULL)); // Seed rand for physics
 
-    // Create server socket
-    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    // Create UDP socket
+    server_sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (server_sock < 0) {
         perror("socket");
         return 1;
@@ -83,26 +107,12 @@ int main() {
         return 1;
     }
 
-    // Listen for connections
-    if (listen(server_sock, 5) < 0) {
-        perror("listen");
-        return 1;
-    }
-
-    printf("Server listening on port %d\n", PORT);
+    printf("UDP Server listening on port %d\n", PORT);
 
     while (1) {
         FD_ZERO(&read_fds);
         FD_SET(server_sock, &read_fds);
         max_fd = server_sock;
-
-        // Add client sockets to set
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (client_sockets[i] > 0) {
-                FD_SET(client_sockets[i], &read_fds);
-                if (client_sockets[i] > max_fd) max_fd = client_sockets[i];
-            }
-        }
 
         // Select with timeout for ~60 FPS (16ms)
         struct timeval tv = {0, 1000000 / FPS};
@@ -112,18 +122,22 @@ int main() {
             perror("select");
         }
 
-        // New connection
+        // Receive from clients (to discover/update them)
         if (FD_ISSET(server_sock, &read_fds)) {
-            int new_sock = accept(server_sock, NULL, NULL);
-            if (new_sock >= 0) {
-                fcntl(new_sock, F_SETFL, O_NONBLOCK); // Non-blocking
-                for (int i = 0; i < MAX_CLIENTS; i++) {
-                    if (client_sockets[i] == 0) {
-                        client_sockets[i] = new_sock;
-                        num_clients++;
-                        printf("New client connected\n");
-                        break;
-                    }
+            int buffer;
+            message = buffer;
+            int ret = recvfrom(server_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&client_addr, &addr_len);
+            if (ret == sizeof(int)) {
+                int idx = client_exists(&client_addr);
+                if (idx == -1 && num_clients < MAX_CLIENTS) {
+                    // New client
+                    clients[num_clients].addr = client_addr;
+                    clients[num_clients].last_seen = time(NULL);
+                    num_clients++;
+                    printf("New client from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                } else if (idx != -1) {
+                    // Update existing
+                    clients[idx].last_seen = time(NULL);
                 }
             }
         }
@@ -131,35 +145,23 @@ int main() {
         // Update physics once per "frame"
         physics();
 
-        // Handle clients
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            int sock = client_sockets[i];
-            if (sock > 0) {
-                // Send position
-                float pos[2] = {cubeX, cubeY};
-                if (send(sock, pos, sizeof(float) * 2, 0) != sizeof(float) * 2) {
-                    if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                        close(sock);
-                        client_sockets[i] = 0;
-                        num_clients--;
-                        printf("Client disconnected\n");
-                    }
-                } else {
-                    // Receive buffer (ignore content for now)
-                    int buffer;
-                    int ret = recv(sock, &buffer, sizeof(int), 0);
-                    message = buffer;
-                    if (buffer != prev_message) {
-                        printf("Recieved: %d\n", buffer);
-                    }
-                    prev_message = message;
-                    if (ret == 0 || (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)) {
-                        close(sock);
-                        client_sockets[i] = 0;
-                        num_clients--;
-                        printf("Client disconnected\n");
-                    }
+        // Send position to all known clients
+        float pos[2] = {cubeX, cubeY};
+        for (int i = 0; i < num_clients; i++) {
+            sendto(server_sock, pos, sizeof(float) * 2, 0, (struct sockaddr*)&clients[i].addr, sizeof(struct sockaddr_in));
+        }
+
+        // Timeout inactive clients
+        time_t now = time(NULL);
+        for (int i = 0; i < num_clients; i++) {
+            if (now - clients[i].last_seen > CLIENT_TIMEOUT_SEC) {
+                printf("Timed out client %s:%d\n", inet_ntoa(clients[i].addr.sin_addr), ntohs(clients[i].addr.sin_port));
+                // Remove by shifting
+                for (int j = i; j < num_clients - 1; j++) {
+                    clients[j] = clients[j + 1];
                 }
+                num_clients--;
+                i--; // Re-check index
             }
         }
     }

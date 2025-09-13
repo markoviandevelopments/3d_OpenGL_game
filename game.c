@@ -11,7 +11,7 @@
 float rotateX = 55.0f;
 float rotateY = -150.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
-const int FPS = 20; // Target frames per second
+const int FPS = 60; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
 
 float posX = -12.4f;
@@ -22,6 +22,8 @@ float cubeX = 1.0f;
 float cubeY = 1.0f;
 
 int client_sock; // Global client socket
+struct sockaddr_in server_addr; // Server address for sendto
+socklen_t addr_len = sizeof(server_addr);
 
 int message = 1;
 
@@ -193,18 +195,20 @@ void display() {
 
 void timer(int value) {
     // Receive position from server (non-blocking)
+    struct sockaddr_in from_addr;
+    socklen_t from_len = sizeof(from_addr);
     float pos[2];
-    int ret = recv(client_sock, pos, sizeof(float) * 2, 0);
+    int ret = recvfrom(client_sock, pos, sizeof(float) * 2, 0, (struct sockaddr*)&from_addr, &from_len);
     if (ret == sizeof(float) * 2) {
         cubeX = pos[0];
         cubeY = pos[1];
     } else if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN) {
-        perror("recv");
+        perror("recvfrom");
     }
 
     // Send buffer back to server
     int buffer = message;
-    send(client_sock, &buffer, sizeof(int), 0);
+    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&server_addr, addr_len);
     message = 1;
 
     glutPostRedisplay(); // Request redraw
@@ -295,25 +299,24 @@ void reshape(int w, int h) {
 }
 
 int main(int argc, char** argv) {
-    // Create client socket and connect to server
-    client_sock = socket(AF_INET, SOCK_STREAM, 0);
+    // Create UDP socket
+    client_sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (client_sock < 0) {
         perror("socket");
         return 1;
     }
 
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(8042);
-    server_addr.sin_addr.s_addr = inet_addr("192.168.1.126");
-
-    if (connect(client_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        perror("connect");
-        return 1;
-    }
-
     // Set non-blocking
     fcntl(client_sock, F_SETFL, O_NONBLOCK);
+
+    // Set server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8042);
+    server_addr.sin_addr.s_addr = inet_addr("192.168.1.126"); // Your server IP
+
+    // Send initial buffer to register with server
+    int buffer = 1;
+    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&server_addr, addr_len);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
