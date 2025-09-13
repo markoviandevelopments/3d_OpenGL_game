@@ -16,7 +16,7 @@
 float rotateX = 920.0f;
 float rotateY = -620.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
-const int FPS = 30; // Target frames per second
+const int FPS = 60; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
 
 float posX = -5.8f;
