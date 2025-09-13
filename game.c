@@ -379,8 +379,7 @@ void display()
         }
     }
 
-    // Draw player cube
-    drawSolidCube(cubeX, cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
+    
 
     // Draw OBJ model
     if (objList != 0)
@@ -397,6 +396,9 @@ void display()
         glCallList(objList);
         glPopMatrix();
     }
+
+    // Draw player cube
+    drawSolidCube(cubeX, cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
 
     glutSwapBuffers();
 }
