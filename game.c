@@ -440,7 +440,7 @@ void display()
             continue;
         }
         printf("dist %f\n",dist);
-        drawSolidCube(xp, yp, zp, 0.5f, 0.5f, 1.0f, 0.99f);
+        drawSolidCube(xp, yp, zp, 1.0f, 0.2f, 1.0f, 0.5f);
     }
 
     glutSwapBuffers();
