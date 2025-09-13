@@ -9,7 +9,6 @@
 #include <math.h>
 #include <time.h>
 
-#define NUM_PARTICLES 150
 //#define M_PI 3.14159265358979
 
 // Rotation angles for the cube
@@ -26,7 +25,7 @@ float posZ = 3.6f;
 float cubeX = 1.0f;
 float cubeY = 1.0f;
 
-int client_sock; // Global client socket
+int client_sock;                // Global client socket
 struct sockaddr_in server_addr; // Server address for sendto
 socklen_t addr_len = sizeof(server_addr);
 
@@ -40,156 +39,155 @@ float avg_frame_time = 0.0f;
 int fps_counter = 0;
 int last_fps_time = 0;
 
-typedef struct
+void drawCube(float x, float y, float z, int t)
 {
-    float x, y, z;    // Position
-    float vx, vy, vz; // Velocity
-    float life;       // Lifetime (0.0 to 1.0)
-} Particle;
+    // Alternate between yellow and cyan based on t
+    float r = t ? 1.0f : 0.0f; // Yellow (1,1,0) or Cyan (0,1,1)
+    float g = 1.0f;
+    float b = t ? 0.0f : 1.0f;
 
-Particle particles[NUM_PARTICLES];
-
-void drawCube(float x, float y, float z, int t) {
-
-    float a = 0.0f;
-
-    if (t) {
-        a = 1.0f - a;
-    }
     glBegin(GL_QUADS);
-    // Front face (red)
-    glColor3f(1.0f, 0.0f, 0.0f + a);
+    glColor3f(r, g, b);
+
+    // Front face (normal: 0, 0, 1)
+    glNormal3f(0.0f, 0.0f, 1.0f);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
-    // Back face (green)
-    glColor3f(0.0f, 1.0f, 0.0f);
+
+    // Back face (normal: 0, 0, -1)
+    glNormal3f(0.0f, 0.0f, -1.0f);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
-    // Top face (blue)
-    glColor3f(0.0f, 0.0f, 1.0f);
+
+    // Top face (normal: 0, 1, 0)
+    glNormal3f(0.0f, 1.0f, 0.0f);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
-    // Bottom face (yellow)
-    glColor3f(1.0f, 1.0f, 0.0f);
+
+    // Bottom face (normal: 0, -1, 0)
+    glNormal3f(0.0f, -1.0f, 0.0f);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
-    // Right face (cyan)
-    glColor3f(0.0f, 1.0f, 1.0f);
+
+    // Right face (normal: 1, 0, 0)
+    glNormal3f(1.0f, 0.0f, 0.0f);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
-    // Left face (magenta)
-    glColor3f(1.0f, 0.0f, 1.0f);
+
+    // Left face (normal: -1, 0, 0)
+    glNormal3f(-1.0f, 0.0f, 0.0f);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+
     glEnd();
 }
 
 void drawSolidCube(float x, float y, float z, float r, float g, float b, float a)
 {
-
     glBegin(GL_QUADS);
-    glColor4f(r,g,b,a);
-    // Front face
+    glColor4f(r, g, b, a);
+
+    // Front face (normal: 0, 0, 1)
+    glNormal3f(0.0f, 0.0f, 1.0f);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
-    // Back face
+
+    // Back face (normal: 0, 0, -1)
+    glNormal3f(0.0f, 0.0f, -1.0f);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
-    // Top face
+
+    // Top face (normal: 0, 1, 0)
+    glNormal3f(0.0f, 1.0f, 0.0f);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
-    // Bottom face
+
+    // Bottom face (normal: 0, -1, 0)
+    glNormal3f(0.0f, -1.0f, 0.0f);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
-    // Right face
+
+    // Right face (normal: 1, 0, 0)
+    glNormal3f(1.0f, 0.0f, 0.0f);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
-    // Left face
+
+    // Left face (normal: -1, 0, 0)
+    glNormal3f(-1.0f, 0.0f, 0.0f);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
+
     glEnd();
 
-
+    // Draw black edges (lighting doesn’t affect lines, so disable temporarily)
+    glDisable(GL_LIGHTING);
     glBegin(GL_LINES);
-    glColor3f(0.0f, 0.0f, 0.0f); // Black edges for contrast
+    glColor3f(0.0f, 0.0f, 0.0f);
     // Front face edges
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
-    
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
-    
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
-    
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
-    
     // Back face edges
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
-    
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
-    
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
-    
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
-    
-    // Connecting edges (front to back)
+    // Connecting edges
     glVertex3f(-0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, -0.5f + y, -0.5f + z);
-    
     glVertex3f(0.5f + x, -0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, -0.5f + y, -0.5f + z);
-    
     glVertex3f(0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(0.5f + x, 0.5f + y, -0.5f + z);
-    
     glVertex3f(-0.5f + x, 0.5f + y, 0.5f + z);
     glVertex3f(-0.5f + x, 0.5f + y, -0.5f + z);
     glEnd();
+    glEnable(GL_LIGHTING);
 }
 
-
-
-
-void display() {
-
+void display()
+{
     current_time = glutGet(GLUT_ELAPSED_TIME);
     int frame_time = current_time - last_time;
     avg_frame_time = (avg_frame_time * frame_count + frame_time) / (frame_count + 1);
     frame_count++;
     last_time = current_time;
 
-    // Print FPS and frame time every second
-    if (current_time - last_fps_time >= 1000) {
+    if (current_time - last_fps_time >= 1000)
+    {
         int actual_fps = 1000 / avg_frame_time;
         printf("FPS: %d | Avg Frame Time: %.2f ms | Cube Pos: (%.2f, %.2f)\n", actual_fps, avg_frame_time, cubeX, cubeY);
         avg_frame_time = 0.0f;
@@ -210,71 +208,53 @@ void display() {
     //glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
     //glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
 
-    float z=0.0f;
-    int t=0;
+    // Set light position after camera transformations
+    GLfloat light_position[] = {4.0f, 4.0f, 10.0f, 0.0f}; // Directional light above checkerboard center
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-    
-
-    for (float x=0.0f;x<=8.0f;x+=1.0f) {
-        for (float y=0.0f;y<=8.0f;y+=1.0f){
+    // Draw checkerboard
+    float z = -0.5f;
+    int t = 0;
+    for (float x = 0.0f; x <= 8.0f; x += 1.0f)
+    {
+        t = (int)x % 2;
+        for (float y = 0.0f; y <= 8.0f; y += 1.0f)
+        {
             drawCube(x, y, z, t);
             t = 1 - t;
-            
         }
-        //t = 1 - t;
     }
 
-    glDepthMask(GL_FALSE);
-    glEnable(GL_POINT_SMOOTH); // Smooth points
-    glPointSize(3.0f);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    drawSolidCube(cubeX,cubeY,1.05f,0.5f,0.5f,1.0f, 0.5f);
-    glDepthMask(GL_TRUE); // Re-enable depth writing
+    // Draw player cube
+    drawSolidCube(cubeX, cubeY, 1.05f, 0.5f, 0.5f, 1.0f, 0.5f);
 
     glutSwapBuffers();
-    
 }
 
-void timer(int value) {
+void timer(int value)
+{
     // Receive position from server (non-blocking)
     struct sockaddr_in from_addr;
     socklen_t from_len = sizeof(from_addr);
     float pos[2];
-    int ret = recvfrom(client_sock, pos, sizeof(float) * 2, 0, (struct sockaddr*)&from_addr, &from_len);
-    if (ret == sizeof(float) * 2) {
+    int ret = recvfrom(client_sock, pos, sizeof(float) * 2, 0, (struct sockaddr *)&from_addr, &from_len);
+    if (ret == sizeof(float) * 2)
+    {
         cubeX = pos[0];
         cubeY = pos[1];
-    } else if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN) {
+    }
+    else if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
+    {
         perror("recvfrom");
     }
 
     // Send buffer back to server
     int buffer = message;
-    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&server_addr, addr_len);
+    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr *)&server_addr, addr_len);
     message = 1;
 
-    // Update particles
-    for (int i = 0; i < NUM_PARTICLES; i++) {
-        particles[i].x += particles[i].vx;
-        particles[i].y += particles[i].vy;
-        particles[i].z += particles[i].vz;
-        particles[i].life -= 0.005f;  // Fade out slowly
-
-        // Respawn if dead or out of bounds
-        if (particles[i].life <= 0.0f || particles[i].x < 0 || particles[i].x > 8 || particles[i].y < 0 || particles[i].y > 8 || particles[i].z < 0.5f || particles[i].z > 3.0f) {
-            particles[i].x = (rand() % 80) / 10.0f;
-            particles[i].y = (rand() % 80) / 10.0f;
-            particles[i].z = (rand() % 20) / 10.0f + 0.5f;
-            particles[i].vx = ((rand() % 10) - 5) / 50.0f;
-            particles[i].vy = ((rand() % 10) - 5) / 50.0f;
-            particles[i].vz = ((rand() % 5) - 2.5f) / 100.0f;
-            particles[i].life = 1.0f;
-        }
-    }
-
-    glutPostRedisplay(); // Request redraw
-    glutTimerFunc(FRAME_INTERVAL_MS, timer, 0); // Schedule next timer
+    glutPostRedisplay();
+    glutTimerFunc(FRAME_INTERVAL_MS, timer, 0);
 }
 
 void specialKeys(int key, int x, int y) {
@@ -296,85 +276,119 @@ void specialKeys(int key, int x, int y) {
     glutPostRedisplay(); // Request redraw
 }
 
-void keyboard(unsigned char key, int x, int y) {
-    if (key == 'w') {
+void keyboard(unsigned char key, int x, int y)
+{
+    if (key == 'w')
+    {
         posX += 0.1f;
         display();
     }
-    if (key == 's') {
+    if (key == 's')
+    {
         posX -= 0.1f;
         display();
     }
-    if (key == 'a') {
+    if (key == 'a')
+    {
         posY -= 0.1f;
         display();
     }
-    if (key == 'd') {
+    if (key == 'd')
+    {
         posY += 0.1f;
         display();
     }
-    if (key == 'q') {
+    if (key == 'q')
+    {
         posZ -= 0.1f;
         display();
     }
-    if (key == 'e') {
+    if (key == 'e')
+    {
         posZ += 0.1f;
         display();
     }
-    if (key == 'm') {
-        printf("Rotate X: %f\tRotate Y: %f\tX: %f\tY: %f\tZ: %f\n",rotateX,rotateY,posX,posY,posZ);
+    if (key == 'm')
+    {
+        printf("Rotate X: %f\tRotate Y: %f\tX: %f\tY: %f\tZ: %f\n", rotateX, rotateY, posX, posY, posZ);
     }
-    if (key == 'n') {
+    if (key == 'n')
+    {
         message = 2;
-    } else if(key == 'j') {
+    }
+    else if (key == 'j')
+    {
         message = 3;
-    } else if(key == 'i') {
+    }
+    else if (key == 'i')
+    {
         message = 4;
-    } else if(key == 'l') {
+    }
+    else if (key == 'l')
+    {
         message = 5;
-    } else if(key == 'k') {
+    }
+    else if (key == 'k')
+    {
         message = 6;
-    } else {
+    }
+    else
+    {
         message = 1;
     }
-    if (key == 27) { // Escape key to exit
+    if (key == 27)
+    { // Escape key to exit
         exit(0);
     }
 }
 
-void init() {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
-    glEnable(GL_DEPTH_TEST); // Enable depth testing
-    glEnable(GL_BLEND); // Enable blending
+void init()
+{
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);              // Black background
+    glEnable(GL_DEPTH_TEST);                           // Enable depth testing
+    glEnable(GL_BLEND);                                // Enable blending
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Set blend function
+
+    // Enable lighting
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    // Define light properties (no position here)
+    GLfloat light_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
+    GLfloat light_diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    GLfloat light_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+    GLfloat material_specular[] = {0.5f, 0.5f, 0.5f, 1.0f};
+    GLfloat material_shininess[] = {50.0f};
+    glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+
     glMatrixMode(GL_PROJECTION);
     gluPerspective(45.0f, 1.0f, 0.1f, 100.0f); // FOV, aspect, near, far
     glMatrixMode(GL_MODELVIEW);
-    srand(time(NULL)); // Seed random
-    for (int i = 0; i < NUM_PARTICLES; i++)
-    {
-        particles[i].x = (rand() % 80) / 10.0f;        // Random x in 0-8
-        particles[i].y = (rand() % 80) / 10.0f;        // Random y in 0-8
-        particles[i].z = (rand() % 20) / 10.0f + 0.5f; // Slightly above ground
-        particles[i].vx = ((rand() % 10) - 5) / 50.0f; // Small random velocity
-        particles[i].vy = ((rand() % 10) - 5) / 50.0f;
-        particles[i].vz = ((rand() % 5) - 2.5f) / 100.0f; // Gentle up/down
-        particles[i].life = (rand() % 100) / 100.0f;      // Random start life
-    }
 }
 
-void reshape(int w, int h) {
+void reshape(int w, int h)
+{
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, (float)w/h, 0.1f, 100.0f);
+    gluPerspective(45.0f, (float)w / h, 0.1f, 100.0f);
     glMatrixMode(GL_MODELVIEW);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     // Create UDP socket
     client_sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (client_sock < 0) {
+    if (client_sock < 0)
+    {
         perror("socket");
         return 1;
     }
@@ -389,7 +403,7 @@ int main(int argc, char** argv) {
 
     // Send initial buffer to register with server
     int buffer = 1;
-    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&server_addr, addr_len);
+    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr *)&server_addr, addr_len);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
