@@ -34,8 +34,6 @@ struct ClientMessage {
     struct Position position;
 };
 
-struct ClientMessage clientmessage;
-
 // Client tracking struct
 struct Client {
     struct sockaddr_in addr;
@@ -43,12 +41,21 @@ struct Client {
     struct Position position;
 };
 
+struct PlayerInfo {
+    int exists;
+    struct Position position;
+};
+
+struct ServerMessage {
+    float browniancube[2]; // x and y positions of cube on checkerboard
+    struct PlayerInfo playerinfo[MAX_CLIENTS];
+};
 
 
 struct Client clients[MAX_CLIENTS];
+struct ClientMessage clientmessage;
+struct ServerMessage servermessage;
 int num_clients = 0;
-
-
 
 void physics() {
     
@@ -164,9 +171,23 @@ int main() {
         physics();
 
         // Send position to all known clients
-        float pos[2] = {cubeX, cubeY};
+        // float pos[2] = {cubeX, cubeY};
+        servermessage.browniancube[0] = cubeX;
+        servermessage.browniancube[1] = cubeY;
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            servermessage.playerinfo[i].exists = i < num_clients;
+            if(i < num_clients) {
+                servermessage.playerinfo[i].position.x = clients[i].position.x;
+                servermessage.playerinfo[i].position.y = clients[i].position.y;
+                servermessage.playerinfo[i].position.z = clients[i].position.z;
+            } else {
+                servermessage.playerinfo[i].position.x = 0.0f;
+                servermessage.playerinfo[i].position.y = 0.0f;
+                servermessage.playerinfo[i].position.z = 0.0f;
+            }
+        }
         for (int i = 0; i < num_clients; i++) {
-            sendto(server_sock, pos, sizeof(float) * 2, 0, (struct sockaddr*)&clients[i].addr, sizeof(struct sockaddr_in));
+            sendto(server_sock, &servermessage, sizeof(float) * 2 + (sizeof(int) + 3UL * sizeof(float)) * ((unsigned long) MAX_CLIENTS), 0, (struct sockaddr*)&clients[i].addr, sizeof(struct sockaddr_in));
         }
 
         // Timeout inactive clients

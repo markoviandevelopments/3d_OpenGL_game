@@ -11,6 +11,8 @@
 #include <string.h>
 #include <float.h>
 
+#define MAX_CLIENTS 10
+
 //#define M_PI 3.14159265358979
 GLuint objList = 0;
 
@@ -44,9 +46,20 @@ struct ClientMessage {
     struct Position position;
 };
 
+struct PlayerInfo {
+    int exists;
+    struct Position position;
+};
+
+struct ServerMessage {
+    float browniancube[2]; // x and y positions of cube on checkerboard
+    struct PlayerInfo playerinfo[MAX_CLIENTS];
+};
+
 int message = 1;
 
 struct ClientMessage clientmessage;
+struct ServerMessage servermessage;
 
 // Frame timing variables
 int frame_count = 0;
@@ -414,6 +427,22 @@ void display()
     // Draw player cube
     drawSolidCube(cubeX, cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
 
+    for (int i=0; i<MAX_CLIENTS; i++) {
+        
+        float xp = servermessage.playerinfo[i].position.x;
+        float yp = servermessage.playerinfo[i].position.y;
+        float zp = servermessage.playerinfo[i].position.z;
+        float dx = xp - posX;
+        float dy = yp - posY;
+        float dz = zp - posZ;
+        float dist = (float) sqrt((double) (dx*dx + dy*dy + dz*dz));
+        if (!servermessage.playerinfo[i].exists || dist < 0.5f) {
+            continue;
+        }
+        printf("dist %f\n",dist);
+        drawSolidCube(xp, yp, zp, 0.5f, 0.5f, 1.0f, 0.99f);
+    }
+
     glutSwapBuffers();
 }
 
@@ -422,21 +451,18 @@ void timer(int value)
     // Receive position from server (non-blocking)
     struct sockaddr_in from_addr;
     socklen_t from_len = sizeof(from_addr);
-    float pos[2];
-    int ret = recvfrom(client_sock, pos, sizeof(float) * 2, 0, (struct sockaddr *)&from_addr, &from_len);
-    if (ret == sizeof(float) * 2)
-    {
-        cubeX = pos[0];
-        cubeY = pos[1];
-    }
-    else if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
+    int ret = recvfrom(client_sock, &servermessage, sizeof(float) * 2 + (sizeof(int) + 3UL * sizeof(float)) * ((unsigned long) MAX_CLIENTS), 0, (struct sockaddr *)&from_addr, &from_len);
+    if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
     {
         perror("recvfrom");
     }
 
     // Send buffer back to server
-    int buffer = message;
-    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr *)&server_addr, addr_len);
+    clientmessage.command = 1;
+    clientmessage.position.x = posX;
+    clientmessage.position.y = posY;
+    clientmessage.position.z = posZ;
+    sendto(client_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr *)&server_addr, addr_len);
     message = 1;
 
     glutPostRedisplay();
@@ -597,7 +623,6 @@ int main(int argc, char **argv)
     server_addr.sin_addr.s_addr = inet_addr("192.168.1.126"); // Your server IP
 
     // Send initial buffer to register with server
-    int buffer = 1;
     clientmessage.command =1;
     clientmessage.position.x = posX;
     clientmessage.position.y = posY;
