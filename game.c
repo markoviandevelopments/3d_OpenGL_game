@@ -6,19 +6,22 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <math.h>
+#include <time.h>
 
 #define NUM_PARTICLES 150
+//#define M_PI 3.14159265358979
 
 // Rotation angles for the cube
-float rotateX = 55.0f;
-float rotateY = -150.0f;
+float rotateX = 920.0f;
+float rotateY = -620.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
 const int FPS = 30; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
 
-float posX = -12.4f;
-float posY = -7.4f;
-float posZ = -5.4f;
+float posX = -5.8f;
+float posY = -7.6f;
+float posZ = 3.6f;
 
 float cubeX = 1.0f;
 float cubeY = 1.0f;
@@ -197,12 +200,15 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     // Set camera position
+    float dx1 = (float) cos(((double) rotateY) / 360.0 * M_PI);
+    float dy1 = (float) sin(((double) rotateY) / 360.0 * M_PI);
+    float dz1 = (float) cos(((double) rotateX) / 360.0 * M_PI);
     gluLookAt(posX,posY, posZ,// Eye position
-              posX + 4.0f, posY + 4.0f, posZ + 4.0f,  // Look at origin
-              0.0f, 1.0f, 0.0f); // Up vector
+              posX + dx1, posY + dy1, posZ + dz1,  // Look at origin
+              0.0f, 0.0f, 1.0f); // Up vector
     // Apply rotation
-    glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
-    glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
+    //glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
+    //glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
 
     float z=0.0f;
     int t=0;
@@ -274,16 +280,16 @@ void timer(int value) {
 void specialKeys(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_UP:    // Rotate up
-            rotateX -= rotateSpeed;
-            break;
-        case GLUT_KEY_DOWN:  // Rotate down
             rotateX += rotateSpeed;
             break;
+        case GLUT_KEY_DOWN:  // Rotate down
+            rotateX -= rotateSpeed;
+            break;
         case GLUT_KEY_LEFT:  // Rotate left
-            rotateY -= rotateSpeed;
+            rotateY += rotateSpeed;
             break;
         case GLUT_KEY_RIGHT: // Rotate right
-            rotateY += rotateSpeed;
+            rotateY -= rotateSpeed;
             break;
         
     }

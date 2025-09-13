@@ -7,7 +7,9 @@
                 "/usr/include",
                 "/usr/include/GL"
             ],
-            "defines": [],
+            "defines": [
+                "_GNU_SOURCE" // Enables M_PI and other GNU extensions
+            ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",

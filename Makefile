@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -g
-GL_LDFLAGS = -lglut -lGL -lGLU
+GL_LDFLAGS = -lglut -lGL -lGLU -lm
 
 all: server client
 
