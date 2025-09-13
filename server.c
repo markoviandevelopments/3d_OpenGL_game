@@ -13,7 +13,7 @@
 
 #define PORT 8042
 #define MAX_CLIENTS 10
-#define FPS 60
+#define FPS 5
 #define CLIENT_TIMEOUT_SEC 5 // Timeout inactive clients after 5 seconds
 
 float cubeX = 1.0f;

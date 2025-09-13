@@ -11,7 +11,7 @@
 float rotateX = 55.0f;
 float rotateY = -150.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
-const int FPS = 60; // Target frames per second
+const int FPS = 30; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
 
 float posX = -12.4f;
@@ -26,6 +26,14 @@ struct sockaddr_in server_addr; // Server address for sendto
 socklen_t addr_len = sizeof(server_addr);
 
 int message = 1;
+
+// Frame timing variables
+int frame_count = 0;
+int last_time = 0;
+int current_time = 0;
+float avg_frame_time = 0.0f;
+int fps_counter = 0;
+int last_fps_time = 0;
 
 void drawCube(float x, float y, float z, int t) {
 
@@ -161,6 +169,22 @@ void drawSolidCube(float x, float y, float z, float r, float g, float b, float a
 
 
 void display() {
+
+    current_time = glutGet(GLUT_ELAPSED_TIME);
+    int frame_time = current_time - last_time;
+    avg_frame_time = (avg_frame_time * frame_count + frame_time) / (frame_count + 1);
+    frame_count++;
+    last_time = current_time;
+
+    // Print FPS and frame time every second
+    if (current_time - last_fps_time >= 1000) {
+        int actual_fps = 1000 / avg_frame_time;
+        printf("FPS: %d | Avg Frame Time: %.2f ms | Cube Pos: (%.2f, %.2f)\n", actual_fps, avg_frame_time, cubeX, cubeY);
+        avg_frame_time = 0.0f;
+        frame_count = 0;
+        last_fps_time = current_time;
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     // Set camera position
