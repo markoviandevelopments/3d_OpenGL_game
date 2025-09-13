@@ -16,7 +16,7 @@ float rotateX = 920.0f;
 float rotateY = -620.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
 const int FPS = 60; // Target frames per second
-const int FRAME_INTERVAL_MS = 1000 / FPS; // 50ms for 20 FPS
+const int FRAME_INTERVAL_MS = 1000 / FPS;
 
 float posX = -5.8f;
 float posY = -7.6f;
@@ -280,22 +280,30 @@ void keyboard(unsigned char key, int x, int y)
 {
     if (key == 'w')
     {
-        posX += 0.1f;
+        posX += (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+        posY += (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+        posZ += (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
         display();
     }
     if (key == 's')
     {
-        posX -= 0.1f;
+        posX -= (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+        posY -= (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+        posZ -= (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
         display();
     }
     if (key == 'a')
     {
-        posY -= 0.1f;
+        posX += (float) 0.1 * cos(((double) rotateY + 90.0) / 360.0 * M_PI);
+        posY += (float) 0.1 * sin(((double) rotateY + 90.0) / 360.0 * M_PI);
+        posZ += (float) 0.1 * cos(((double) rotateX + 90.0) / 360.0 * M_PI);
         display();
     }
     if (key == 'd')
     {
-        posY += 0.1f;
+        posX -= (float) 0.1 * cos(((double) rotateY + 90.0) / 360.0 * M_PI);
+        posY -= (float) 0.1 * sin(((double) rotateY + 90.0) / 360.0 * M_PI);
+        posZ -= (float) 0.1 * cos(((double) rotateX + 90.0) / 360.0 * M_PI);
         display();
     }
     if (key == 'q')
