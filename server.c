@@ -23,12 +23,27 @@ float speed = 0.05f;
 int message = 1;
 int prev_message = 1;
 
+struct Position {
+    float x;
+    float y;
+    float z;
+};
+
+struct ClientMessage {
+    int command;
+    struct Position position;
+};
+
+struct ClientMessage clientmessage;
 
 // Client tracking struct
 struct Client {
     struct sockaddr_in addr;
     time_t last_seen;
+    struct Position position;
 };
+
+
 
 struct Client clients[MAX_CLIENTS];
 int num_clients = 0;
@@ -124,10 +139,9 @@ int main() {
 
         // Receive from clients (to discover/update them)
         if (FD_ISSET(server_sock, &read_fds)) {
-            int buffer;
-            message = buffer;
-            int ret = recvfrom(server_sock, &buffer, sizeof(int), 0, (struct sockaddr*)&client_addr, &addr_len);
-            if (ret == sizeof(int)) {
+            int ret = recvfrom(server_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr*)&client_addr, &addr_len);
+            if (ret > 0) {
+                message = clientmessage.command;
                 int idx = client_exists(&client_addr);
                 if (idx == -1 && num_clients < MAX_CLIENTS) {
                     // New client
@@ -138,6 +152,10 @@ int main() {
                 } else if (idx != -1) {
                     // Update existing
                     clients[idx].last_seen = time(NULL);
+                    clients[idx].position.x = clientmessage.position.x;
+                    clients[idx].position.y = clientmessage.position.y;
+                    clients[idx].position.z = clientmessage.position.z;
+                    printf("Client %d\tx: %.2f\ty: %.2f\tz: %.2f\n",idx,clients[idx].position.x,clients[idx].position.y,clients[idx].position.z);
                 }
             }
         }

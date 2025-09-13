@@ -32,7 +32,21 @@ int client_sock;                // Global client socket
 struct sockaddr_in server_addr; // Server address for sendto
 socklen_t addr_len = sizeof(server_addr);
 
+
+struct Position {
+    float x;
+    float y;
+    float z;
+};
+
+struct ClientMessage {
+    int command;
+    struct Position position;
+};
+
 int message = 1;
+
+struct ClientMessage clientmessage;
 
 // Frame timing variables
 int frame_count = 0;
@@ -584,7 +598,11 @@ int main(int argc, char **argv)
 
     // Send initial buffer to register with server
     int buffer = 1;
-    sendto(client_sock, &buffer, sizeof(int), 0, (struct sockaddr *)&server_addr, addr_len);
+    clientmessage.command =1;
+    clientmessage.position.x = posX;
+    clientmessage.position.y = posY;
+    clientmessage.position.z = posZ;
+    sendto(client_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr *)&server_addr, addr_len);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
