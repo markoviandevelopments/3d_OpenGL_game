@@ -3,6 +3,9 @@
         "inet.h": "c",
         "errno.h": "c",
         "in.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "cmath": "c",
+        "complex": "c",
+        "valarray": "c"
     }
 }
