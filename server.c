@@ -10,14 +10,15 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <time.h> // For rand() and time()
+#include <math.h>
 
 #define PORT 8042
 #define MAX_CLIENTS 10
 #define FPS 3
 #define CLIENT_TIMEOUT_SEC 5 // Timeout inactive clients after 5 seconds
 
-float cubeX = 1.0f;
-float cubeY = 1.0f;
+float cubeX = 5.0f;
+float cubeY = 5.0f;
 float speed = 0.05f;
 
 int message = 1;
@@ -57,6 +58,22 @@ struct ClientMessage clientmessage;
 struct ServerMessage servermessage;
 int num_clients = 0;
 
+int checkCollision(float x_in, float y_in, float z_in) {
+    double x = (double) x_in;
+    double y = (double) y_in;
+    double z = (double) z_in;
+
+    //check collision with platform
+    float dist = sqrt((x - 10.0) * (x - 10.0) + (y - 10.0) * (y - 10.0));
+    if (dist < 10.0 && z < 0.5 && z > -0.5) {
+        return 1;
+    }
+    if (dist > 9.5 && dist < 10.5 && z < 1.0 && z > 0.0) {
+        return 1;
+    }
+    return 0;
+}
+
 void physics() {
     
 
@@ -81,14 +98,14 @@ void physics() {
     if (message == 6) {
         dy = -0.1f;
     }
-    
-    cubeX += dx;
-    cubeY += dy;
 
-    if (cubeX > 8.0f) cubeX = 8.0f;
-    if (cubeY > 8.0f) cubeY = 8.0f;
-    if (cubeX < 0.0f) cubeX = 0.0f;
-    if (cubeY < 0.0f) cubeY = 0.0f;
+    if (!checkCollision(cubeX + dx,cubeY + dy, 0.51f)) {
+        cubeX += dx;
+        cubeY += dy;
+    }
+    
+    
+
 }
 
 // Check if client address already exists

@@ -26,12 +26,12 @@ int fps_actual = 60;
 float player_speed = 1.0f;
 
 
-float posX = -5.8f;
-float posY = -7.6f;
+float posX = 5.8f;
+float posY = 7.6f;
 float posZ = 3.6f;
 
-float cubeX = 1.0f;
-float cubeY = 1.0f;
+float cubeX = 5.0f;
+float cubeY = 5.0f;
 
 int client_sock;                // Global client socket
 struct sockaddr_in server_addr; // Server address for sendto
@@ -491,6 +491,42 @@ void renderText(float x, float y, void *font, const char *text) {
     glMatrixMode(GL_MODELVIEW);
 }
 
+int checkCollision(float x_in, float y_in, float z_in) {
+    double x = (double) x_in;
+    double y = (double) y_in;
+    double z = (double) z_in;
+
+    //check collision with platform
+    float dist = sqrt((x - 10.0) * (x - 10.0) + (y - 10.0) * (y - 10.0));
+    if (dist < 10.0 && z < 0.5 && z > -0.5) {
+        return 1;
+    }
+    if (dist > 9.5 && dist < 10.5 && z < 1.0 && z > 0.0) {
+        return 1;
+    }
+    return 0;
+}
+
+void physics() {
+    float dx = 0;
+    float dy = 0;
+    float dz = 0;
+
+    dz -= 0.01f;
+
+    if (dx != 0.0f || dy != 0.0f || dz != 0.0f) {
+        for (double f=0.0;f<7.0;f+=1.0) {
+            float factor = (float) (1.0 / pow(2.0 , f));
+            if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor)) {
+            posX += dx * factor;
+            posY += dy * factor;
+            posZ += dz * factor;
+            break;
+        }
+        }
+    }
+}
+
 void display()
 {
     current_time = glutGet(GLUT_ELAPSED_TIME);
@@ -548,7 +584,7 @@ void display()
         }
     }
 
-    for (double a=0;a<2.0 * M_PI;a+=.1) {
+    for (double a=0;a<2.0 * M_PI;a+=.03) {
         float x = 10.0f * ((float) cos(a)) + 10.0f;
         float y = 10.0f * ((float) sin(a)) + 10.0f;
         drawSolidCube(x,y,0.5f,1.0f,0.5f,0.0f,0.5f);
@@ -601,14 +637,17 @@ void display()
 
     // Render HUD text
     char fpsText[256];
-    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.1f, %.1f, %.1f)", fps_actual, cubeX, cubeY,posX,posY,posZ);
+    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.3f, %.3f, %.3f)", fps_actual, cubeX, cubeY,posX,posY,posZ);
     renderText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, GLUT_BITMAP_HELVETICA_18, fpsText);  // Top-left
 
     // Example: Static instructions
     renderText(10, 30, GLUT_BITMAP_HELVETICA_12, "WASD: Move | Arrows: Look | N/J/I/L/K: Control Cube");
 
     glutSwapBuffers();
+    physics();
 }
+
+
 
 void timer(int value)
 {
@@ -655,46 +694,61 @@ void specialKeys(int key, int x, int y) {
     glutPostRedisplay(); // Request redraw
 }
 
+
+
 void keyboard(unsigned char key, int x, int y)
 {
+    float dx = 0;
+    float dy = 0;
+    float dz = 0;
     if (key == 'w')
     {
-        posX += player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-        posY += player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-        posZ += player_speed * (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
-        display();
+        dx = player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+        dy = player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+        dz = player_speed * (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
     }
     if (key == 's')
     {
-        posX -= player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-        posY -= player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-        posZ -= player_speed * (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
-        display();
+        dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+        dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+        dz = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
     }
     if (key == 'a')
     {
-        posX += player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posY += player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posZ += player_speed * (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
-        display();
+        dx = player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+        dy = player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+        dz = player_speed * (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
     }
     if (key == 'd')
     {
-        posX -= player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posY -= player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posZ -= player_speed * (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
-        display();
+        dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+        dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+        dz = -1.0f * player_speed * (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
     }
     if (key == 'q')
     {
-        posZ -= player_speed * 0.1f;
-        display();
+        dz = -1.0f * player_speed * 0.1f;
     }
     if (key == 'e')
     {
-        posZ += player_speed * 0.1f;
-        display();
+        dz = player_speed * 0.1f;
     }
+
+
+    if (dx != 0.0f || dy != 0.0f || dz != 0.0f) {
+        for (double f=0.0;f<7.0;f+=1.0) {
+            float factor = (float) (1.0 / pow(2.0 , f));
+            if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor)) {
+            posX += dx * factor;
+            posY += dy * factor;
+            posZ += dz * factor;
+            display();
+            break;
+        }
+        }
+    }
+
+
     if (key == 'm')
     {
         printf("Rotate X: %f\tRotate Y: %f\tX: %f\tY: %f\tZ: %f\n", rotateX, rotateY, posX, posY, posZ);

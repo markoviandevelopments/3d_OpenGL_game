@@ -5,7 +5,7 @@ GL_LDFLAGS = -lglut -lGL -lGLU -lm
 all: server client
 
 server: server.c
-	$(CC) $(CFLAGS) server.c -o server
+	$(CC) $(CFLAGS) server.c -o server $(GL_LDFLAGS)
 
 client: game.c
 	$(CC) $(CFLAGS) game.c -o client $(GL_LDFLAGS)
