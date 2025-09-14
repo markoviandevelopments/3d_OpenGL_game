@@ -13,6 +13,7 @@
 
 #define MAX_CLIENTS 10
 #define DRAW_DOME 0
+#define RENDER_DIST 5000.0f
 
 // #define M_PI 3.14159265358979
 GLuint objList = 0;
@@ -24,7 +25,7 @@ float rotateSpeed = 5.0f; // Degrees per key press
 const int FPS = 60; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS;
 int fps_actual = 60;
-float player_speed = 1.0f;
+float player_speed = 3.0f;
 
 float posX = 5.8f;
 float posY = 7.6f;
@@ -37,8 +38,9 @@ float velZ = 0.0f;
 float dt = 0.01f;
 
 int usevelocity = 0;
-float speedV = 10.0f;
-float grav_c = 100.0f;
+int canclip = 0;
+float speedV = 50.0f;
+float grav_c = 500.0f;
 
 float cubeX = 5.0f;
 float cubeY = 5.0f;
@@ -556,7 +558,7 @@ void physics() {
     if (dx != 0.0f || dy != 0.0f || dz != 0.0f || usevelocity) {
         for (double f=0.0;f<7.0;f+=1.0) {
             float factor = (float) (1.0 / pow(2.0 , f));
-            if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor)) {
+            if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor) || canclip) {
             posX += dx * factor;
             posY += dy * factor;
             posZ += dz * factor;
@@ -685,7 +687,7 @@ void display()
 
     // Render HUD text
     char fpsText[256];
-    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.3f, %.3f, %.3f) | Use Velocity: %d", fps_actual, cubeX, cubeY,posX,posY,posZ,usevelocity);
+    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.3f, %.3f, %.3f) | Use Velocity: %d | Can Clip: %d", fps_actual, cubeX, cubeY,posX,posY,posZ,usevelocity,canclip);
     renderText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, GLUT_BITMAP_HELVETICA_18, fpsText);  // Top-left
     char fpsText2[256];
     sprintf(fpsText2,"Velocities: (%.3f, %.3f, %.3f) | Angles: (%.2f, %.2f)", velX,velY,velZ,rotateX,rotateY);
@@ -754,32 +756,57 @@ void keyboard(unsigned char key, int x, int y)
     float dx = 0;
     float dy = 0;
     float dz = 0;
-    float a1 = sqrt(pow(cos(((double) rotateY) / 360.0 * M_PI),2.0) + pow(sin(((double) rotateY) / 360.0 * M_PI),2.0));
-    float rotateX1 = atan(((double) rotateX) / a1);
-    if (key == 'w')
-    {
-        dx = player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-        dy = player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-        dz = player_speed * (float) 0.1 * cos(((double) rotateX1) / 360.0 * M_PI);
+    // float a1 = sqrt(pow(cos(((double) rotateY) / 360.0 * M_PI),2.0) + pow(sin(((double) rotateY) / 360.0 * M_PI),2.0));
+    // float rotateX1 = atan(((double) rotateX) / a1);
+    // if (key == 'w')
+    // {
+    //     dx = player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+    //     dy = player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+    //     dz = player_speed * (float) 0.1 * cos(((double) rotateX1) / 360.0 * M_PI);
+    // }
+    // if (key == 's')
+    // {
+    //     dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+    //     dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+    //     dz = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateX1) / 360.0 * M_PI);
+    // }
+    // if (key == 'a')
+    // {
+    //     dx = player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+    //     dy = player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+    //     dz = player_speed * (float) 0.0 * cos(((double) rotateX1 + 180.0) / 360.0 * M_PI);
+    // }
+    // if (key == 'd')
+    // {
+    //     dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+    //     dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+    //     dz = -1.0f * player_speed * (float) 0.0 * cos(((double) rotateX1 + 180.0) / 360.0 * M_PI);
+    // }
+
+    double yaw = ((double) rotateY) * M_PI / 180.0;
+    double pitch = ((double) rotateX) * M_PI / 180.0;
+
+    if (key == 'w') {
+        dx = player_speed * ((float) (0.1 * cos(yaw) * cos(pitch)));
+        dy = player_speed * ((float) (0.1 * sin(yaw) * cos(pitch)));
+        dz = -player_speed * (( float) (0.1 * pitch));
     }
-    if (key == 's')
-    {
-        dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-        dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-        dz = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateX1) / 360.0 * M_PI);
+    if (key == 's') {
+        dx = -player_speed * ((float) (0.1 * cos(yaw) * cos(pitch)));
+        dy = -player_speed * ((float) (0.1 * sin(yaw) * cos(pitch)));
+        dz = player_speed * ((float) (0.1 * pitch));
     }
-    if (key == 'a')
-    {
-        dx = player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-        dy = player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-        dz = player_speed * (float) 0.0 * cos(((double) rotateX1 + 180.0) / 360.0 * M_PI);
+    if (key == 'a') {  // Left strafe
+        dx = player_speed * ((float) (0.1 * -sin(yaw)));
+        dy = player_speed * ((float) (0.1 * cos(yaw)));
+        dz = 0.0f;
     }
-    if (key == 'd')
-    {
-        dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-        dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-        dz = -1.0f * player_speed * (float) 0.0 * cos(((double) rotateX1 + 180.0) / 360.0 * M_PI);
+    if (key == 'd') {  // Right strafe
+        dx = player_speed * ((float) (0.1 * sin(yaw)));
+        dy = player_speed * ((float) (0.1 * -cos(yaw)));
+        dz = 0.0f;
     }
+
     if (key == 'q')
     {
         dz = -1.0f * player_speed * 0.1f;
@@ -802,7 +829,7 @@ void keyboard(unsigned char key, int x, int y)
     if (dx != 0.0f || dy != 0.0f || dz != 0.0f) {
         for (double f=0.0;f<7.0;f+=1.0) {
             float factor = (float) (1.0 / pow(2.0 , f));
-            if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor)) {
+            if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor) || canclip) {
             posX += dx * factor;
             posY += dy * factor;
             posZ += dz * factor;
@@ -822,6 +849,9 @@ void keyboard(unsigned char key, int x, int y)
     if (key == 'm')
     {
         usevelocity = 1 - usevelocity;
+    }
+    if (key == 'c') {
+        canclip = 1 - canclip;
     }
     if (key == 'n')
     {
@@ -879,7 +909,7 @@ void init()
     glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
 
     glMatrixMode(GL_PROJECTION);
-    gluPerspective(45.0f, 1.0f, 0.1f, 500.0f);
+    gluPerspective(45.0f, 1.0f, 0.1f, RENDER_DIST);
     glMatrixMode(GL_MODELVIEW);
 
     // Load OBJ model after OpenGL setup
@@ -891,7 +921,7 @@ void reshape(int w, int h)
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, (float)w / h, 0.1f, 500.0f);
+    gluPerspective(45.0f, (float)w / h, 0.1f, RENDER_DIST);
     glMatrixMode(GL_MODELVIEW);
 }
 
