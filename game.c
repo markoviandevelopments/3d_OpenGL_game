@@ -221,12 +221,20 @@ void drawSkyDome(float radius, int slices, int stacks)
     float purple[3] = {0.3f, 0.1f, 0.6f}; // Mid-sky
     float blue[3] = {0.0f, 0.0f, 0.3f};   // Zenith
 
+    float max_theta = 2.0f * M_PI / 2.50f;
+
     for (int i = 0; i < stacks; ++i)
     {
-        float theta1 = (float)i / stacks * (M_PI / 2.0f); // From 0 (zenith) to pi/2 (horizon)
-        float theta2 = (float)(i + 1) / stacks * (M_PI / 2.0f);
-        float h1 = cosf(theta1); // Normalized height: 1 at zenith, 0 at horizon
+        float theta1 = (float)i / stacks * max_theta; // From 0 (zenith) to max_theta (below horizon)
+        float theta2 = (float)(i + 1) / stacks * max_theta;
+        float h1 = cosf(theta1); // Normalized height: 1 at zenith, negative below horizon
         float h2 = cosf(theta2);
+
+        // Normalize h to [0,1] for gradient (clamp if below 0)
+        float nh1 = fmaxf(0.0f, h1); // Clip below horizon to 0
+        float nh2 = fmaxf(0.0f, h2);
+        nh1 = 1.0f - nh1; // Invert: 0 at zenith, 1 at/below horizon (for easier low-to-high mapping)
+        nh2 = 1.0f - nh2;
 
         glBegin(GL_QUAD_STRIP);
         for (int j = 0; j <= slices; ++j)
@@ -237,19 +245,27 @@ void drawSkyDome(float radius, int slices, int stacks)
             float x1 = radius * sinf(theta1) * cosf(phi);
             float y1 = radius * sinf(theta1) * sinf(phi);
             float z1 = radius * cosf(theta1);
-            // Interp color based on height
+            // Interp color based on normalized height (quicker transition: orange low, fast to purple/blue)
             float r1, g1, b1;
-            if (h1 > 0.5f)
-            {
-                r1 = purple[0] + (blue[0] - purple[0]) * ((h1 - 0.5f) * 2.0f);
-                g1 = purple[1] + (blue[1] - purple[1]) * ((h1 - 0.5f) * 2.0f);
-                b1 = purple[2] + (blue[2] - purple[2]) * ((h1 - 0.5f) * 2.0f);
+            if (nh1 < 0.2f)
+            { // Orange: bottom 20%
+                r1 = orange[0];
+                g1 = orange[1];
+                b1 = orange[2];
+            }
+            else if (nh1 < 0.6f)
+            { // Purple: next 40%
+                float t = (nh1 - 0.2f) / 0.4f;
+                r1 = orange[0] + t * (purple[0] - orange[0]);
+                g1 = orange[1] + t * (purple[1] - orange[1]);
+                b1 = orange[2] + t * (purple[2] - orange[2]);
             }
             else
-            {
-                r1 = orange[0] + (purple[0] - orange[0]) * (h1 * 2.0f);
-                g1 = orange[1] + (purple[1] - orange[1]) * (h1 * 2.0f);
-                b1 = orange[2] + (purple[2] - orange[2]) * (h1 * 2.0f);
+            { // Blue: top 40%
+                float t = (nh1 - 0.6f) / 0.4f;
+                r1 = purple[0] + t * (blue[0] - purple[0]);
+                g1 = purple[1] + t * (blue[1] - purple[1]);
+                b1 = purple[2] + t * (blue[2] - purple[2]);
             }
             glColor3f(r1, g1, b1);
             glVertex3f(x1, y1, z1);
@@ -259,17 +275,25 @@ void drawSkyDome(float radius, int slices, int stacks)
             float y2 = radius * sinf(theta2) * sinf(phi);
             float z2 = radius * cosf(theta2);
             float r2, g2, b2;
-            if (h2 > 0.5f)
+            if (nh2 < 0.2f)
             {
-                r2 = purple[0] + (blue[0] - purple[0]) * ((h2 - 0.5f) * 2.0f);
-                g2 = purple[1] + (blue[1] - purple[1]) * ((h2 - 0.5f) * 2.0f);
-                b2 = purple[2] + (blue[2] - purple[2]) * ((h2 - 0.5f) * 2.0f);
+                r2 = orange[0];
+                g2 = orange[1];
+                b2 = orange[2];
+            }
+            else if (nh2 < 0.6f)
+            {
+                float t = (nh2 - 0.2f) / 0.4f;
+                r2 = orange[0] + t * (purple[0] - orange[0]);
+                g2 = orange[1] + t * (purple[1] - orange[1]);
+                b2 = orange[2] + t * (purple[2] - orange[2]);
             }
             else
             {
-                r2 = orange[0] + (purple[0] - orange[0]) * (h2 * 2.0f);
-                g2 = orange[1] + (purple[1] - orange[1]) * (h2 * 2.0f);
-                b2 = orange[2] + (purple[2] - orange[2]) * (h2 * 2.0f);
+                float t = (nh2 - 0.6f) / 0.4f;
+                r2 = purple[0] + t * (blue[0] - purple[0]);
+                g2 = purple[1] + t * (blue[1] - purple[1]);
+                b2 = purple[2] + t * (blue[2] - purple[2]);
             }
             glColor3f(r2, g2, b2);
             glVertex3f(x2, y2, z2);
@@ -281,7 +305,7 @@ void drawSkyDome(float radius, int slices, int stacks)
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glEnable(GL_BLEND);
-    glEnable(GL_CULL_FACE); // Re-enable if you add it globally later
+    glEnable(GL_CULL_FACE); // Re-enable if needed elsewhere
 }
 
 void loadOBJ(const char *filename)
