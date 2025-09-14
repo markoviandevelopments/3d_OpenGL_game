@@ -13,7 +13,7 @@
 
 #define MAX_CLIENTS 10
 
-#define M_PI 3.14159265358979
+// #define M_PI 3.14159265358979
 GLuint objList = 0;
 
 // Rotation angles for the cube
@@ -22,6 +22,9 @@ float rotateY = -620.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
 const int FPS = 60; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS;
+int fps_actual = 60;
+float player_speed = 200.0f;
+
 
 float posX = -5.8f;
 float posY = -7.6f;
@@ -462,6 +465,30 @@ void loadOBJ(const char *filename)
     printf("Loaded OBJ: %d vertices, %d normals, %d faces\n", numVertices, numNormals, numFaces);
 }
 
+void renderText(float x, float y, void *font, const char *text) {
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT));  // Pixel coords: bottom-left origin
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_DEPTH_TEST);  // Ignore 3D depth for HUD
+    glDisable(GL_LIGHTING);    // No lighting on text
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(x, y);
+    glutBitmapString(font, (unsigned char*)text);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+}
+
 void display()
 {
     current_time = glutGet(GLUT_ELAPSED_TIME);
@@ -472,8 +499,8 @@ void display()
 
     if (current_time - last_fps_time >= 1000)
     {
-        int actual_fps = 1000 / avg_frame_time;
-        printf("FPS: %d | Avg Frame Time: %.2f ms | Cube Pos: (%.2f, %.2f)\n", actual_fps, avg_frame_time, cubeX, cubeY);
+        fps_actual = 1000 / avg_frame_time;
+        printf("FPS: %d | Avg Frame Time: %.2f ms | Cube Pos: (%.2f, %.2f)\n", fps_actual, avg_frame_time, cubeX, cubeY);
         avg_frame_time = 0.0f;
         frame_count = 0;
         last_fps_time = current_time;
@@ -567,6 +594,14 @@ void display()
         
     }
 
+    // Render HUD text
+    char fpsText[256];
+    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.1f, %.1f, %.1f)", fps_actual, cubeX, cubeY,posX,posY,posZ);
+    renderText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, GLUT_BITMAP_HELVETICA_18, fpsText);  // Top-left
+
+    // Example: Static instructions
+    renderText(10, 30, GLUT_BITMAP_HELVETICA_12, "WASD: Move | Arrows: Look | N/J/I/L/K: Control Cube");
+
     glutSwapBuffers();
 }
 
@@ -619,40 +654,40 @@ void keyboard(unsigned char key, int x, int y)
 {
     if (key == 'w')
     {
-        posX += (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-        posY += (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-        posZ += (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
+        posX += player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+        posY += player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+        posZ += player_speed * (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
         display();
     }
     if (key == 's')
     {
-        posX -= (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-        posY -= (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-        posZ -= (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
+        posX -= player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
+        posY -= player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
+        posZ -= player_speed * (float) 0.1 * cos(((double) rotateX) / 360.0 * M_PI);
         display();
     }
     if (key == 'a')
     {
-        posX += (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posY += (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posZ += (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
+        posX += player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posY += player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posZ += player_speed * (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
         display();
     }
     if (key == 'd')
     {
-        posX -= (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posY -= (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-        posZ -= (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
+        posX -= player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posY -= player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
+        posZ -= player_speed * (float) 0.0 * cos(((double) rotateX + 180.0) / 360.0 * M_PI);
         display();
     }
     if (key == 'q')
     {
-        posZ -= 0.1f;
+        posZ -= player_speed * 0.1f;
         display();
     }
     if (key == 'e')
     {
-        posZ += 0.1f;
+        posZ += player_speed * 0.1f;
         display();
     }
     if (key == 'm')
