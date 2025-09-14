@@ -37,8 +37,10 @@ int client_sock;                // Global client socket
 struct sockaddr_in server_addr; // Server address for sendto
 socklen_t addr_len = sizeof(server_addr);
 
+float enterprise_angle = 90.0f;
 
-struct Position {
+    struct Position
+{
     float x;
     float y;
     float z;
@@ -557,11 +559,14 @@ void display()
     // Draw OBJ model
     if (objList != 0)
     {
+        if(frame_count % 20 == 0) {
+            enterprise_angle += 10.0f;
+        }
         glPushMatrix();
-        glTranslatef(6.0f, 6.0f, 1.0f);     // Move up y-axis (from 4.0f to 5.0f)
-        glScalef(0.025f, 0.025f, 0.025f);   // 1/4 of previous scale (0.1f)
-        glRotatef(90.0f, 1.0f, 0.0f, 0.0f); // Static 90-degree rotation around x-axis
-        glColor3f(0.0f, 0.0f, 1.0f);        // Blue for visibility
+        glTranslatef(12.0f, 8.0f, 1.0f);
+        glScalef(0.025f, 0.025f, 0.025f);
+        glRotatef(enterprise_angle, 1.0f, 0.0f, 0.0f);
+        glColor3f(0.0f, 0.0f, 1.0f);
         GLfloat obj_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
         GLfloat obj_shininess[] = {100.0f};
         glMaterialfv(GL_FRONT, GL_SPECULAR, obj_specular);
