@@ -12,12 +12,13 @@
 #include <float.h>
 
 #define MAX_CLIENTS 10
+#define DRAW_DOME 0
 
 // #define M_PI 3.14159265358979
 GLuint objList = 0;
 
 // Rotation angles for the cube
-float rotateX = 920.0f;
+float rotateX = 0.0f;
 float rotateY = -620.0f;
 float rotateSpeed = 5.0f; // Degrees per key press
 const int FPS = 60; // Target frames per second
@@ -25,10 +26,19 @@ const int FRAME_INTERVAL_MS = 1000 / FPS;
 int fps_actual = 60;
 float player_speed = 1.0f;
 
-
 float posX = 5.8f;
 float posY = 7.6f;
 float posZ = 3.6f;
+
+float velX = 0.0f;
+float velY = 0.0f;
+float velZ = 0.0f;
+
+float dt = 0.01f;
+
+int usevelocity = 0;
+float speedV = 10.0f;
+float grav_c = 100.0f;
 
 float cubeX = 5.0f;
 float cubeY = 5.0f;
@@ -508,22 +518,57 @@ int checkCollision(float x_in, float y_in, float z_in) {
 }
 
 void physics() {
-    float dx = 0;
-    float dy = 0;
-    float dz = 0;
 
-    dz -= 0.01f;
 
-    if (dx != 0.0f || dy != 0.0f || dz != 0.0f) {
+    float dx;
+    float dy;
+    float dz;
+
+    if (usevelocity) {
+        dx = velX * dt;
+        dy = velY * dt;
+        dz = velZ * dt;
+
+        float dx1 = posX - 10.0f;
+        float dy1 = posY = 10.0f;
+        float dz1 = posZ - (-1000.0f);
+
+        float dist1 = (float) sqrt(((double) dx1) * ((double) dx1) + ((double) dy1) * ((double) dy1) + ((double) dz1) * ((double) dz1));
+        
+        velX -= dt * grav_c * dx1 / dist1 / dist1;
+        velY -= dt * grav_c * dy1 / dist1 / dist1;
+        velZ -= dt * grav_c * dz1 / dist1 / dist1;
+
+
+    } else {
+        dx = 0.0f;
+        dy = 0.0f;
+        dz = 0.0f;
+        velX = 0.0f;
+        velY = 0.0f;
+        velZ = 0.0f;
+    }
+
+    
+    //velZ -= grav_c * dt;
+
+    int has_collided = 1;
+    if (dx != 0.0f || dy != 0.0f || dz != 0.0f || usevelocity) {
         for (double f=0.0;f<7.0;f+=1.0) {
             float factor = (float) (1.0 / pow(2.0 , f));
             if (!checkCollision(posX + dx * factor, posY + dy * factor,posZ + dz * factor)) {
             posX += dx * factor;
             posY += dy * factor;
             posZ += dz * factor;
+            has_collided = 0;
             break;
         }
         }
+    }
+    if (has_collided) {
+        velX = 0.0f;
+        velY = 0.0f;
+        velZ = 0.0f;
     }
 }
 
@@ -538,7 +583,7 @@ void display()
     if (current_time - last_fps_time >= 1000)
     {
         fps_actual = 1000 / avg_frame_time;
-        printf("FPS: %d | Avg Frame Time: %.2f ms | Cube Pos: (%.2f, %.2f)\n", fps_actual, avg_frame_time, cubeX, cubeY);
+        //("FPS: %d | Avg Frame Time: %.2f ms | Cube Pos: (%.2f, %.2f)\n", fps_actual, avg_frame_time, cubeX, cubeY);
         avg_frame_time = 0.0f;
         frame_count = 0;
         last_fps_time = current_time;
@@ -547,16 +592,19 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw sky dome
-    glPushMatrix();
-    glTranslatef(posX, posY, posZ); // Center on camera
-    drawSkyDome(100.0f, 20, 10);    // Radius, slices (horizontal detail), stacks (vertical detail)
-    glPopMatrix();
+    if (DRAW_DOME) {
+        glPushMatrix();
+        glTranslatef(posX, posY, posZ); // Center on camera
+        drawSkyDome(100.0f, 20, 10);    // Radius, slices (horizontal detail), stacks (vertical detail)
+        glPopMatrix();
+    }
 
     glLoadIdentity();
     // Set camera position
-    float dx1 = (float)cos(((double)rotateY) / 360.0 * M_PI);
-    float dy1 = (float)sin(((double)rotateY) / 360.0 * M_PI);
-    float dz1 = (float)cos(((double)rotateX) / 360.0 * M_PI);
+    float dx1 = (float)cos(((double)rotateY) / 360.0 * 2.0 * M_PI);
+    float dy1 = (float)sin(((double)rotateY) / 360.0 * 2.0 * M_PI);
+    //float dz1 = (float)cos(((double)rotateX) / 360.0 * 2.0f * M_PI);
+    float dz1 = -1 * rotateX / 360.0f * 2.0f * M_PI;
     gluLookAt(posX, posY, posZ,
               posX + dx1, posY + dy1, posZ + dz1,
               0.0f, 0.0f, 1.0f);
@@ -626,7 +674,7 @@ void display()
         if (!servermessage.playerinfo[i].exists || dist < 0.5f) {
             continue;
         }
-        printf("dist %f\n",dist);
+        //printf("dist %f\n",dist);
         if (i == 0) {
             drawSolidCube(xp, yp, zp, 1.0f, 0.2f, 1.0f, 0.5f);
         } else if (i > 0) {
@@ -637,9 +685,11 @@ void display()
 
     // Render HUD text
     char fpsText[256];
-    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.3f, %.3f, %.3f)", fps_actual, cubeX, cubeY,posX,posY,posZ);
+    sprintf(fpsText, "FPS: %d | Cube: (%.1f, %.1f) | Player: (%.3f, %.3f, %.3f) | Use Velocity: %d", fps_actual, cubeX, cubeY,posX,posY,posZ,usevelocity);
     renderText(10, glutGet(GLUT_WINDOW_HEIGHT) - 30, GLUT_BITMAP_HELVETICA_18, fpsText);  // Top-left
-
+    char fpsText2[256];
+    sprintf(fpsText2,"Velocities: (%.3f, %.3f, %.3f) | Angles: (%.2f, %.2f)", velX,velY,velZ,rotateX,rotateY);
+    renderText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, GLUT_BITMAP_HELVETICA_18, fpsText2);
     // Example: Static instructions
     renderText(10, 30, GLUT_BITMAP_HELVETICA_12, "WASD: Move | Arrows: Look | N/J/I/L/K: Control Cube");
 
@@ -691,6 +741,9 @@ void specialKeys(int key, int x, int y) {
             break;
         
     }
+
+    if (rotateX > 400.0f) {rotateX = 400.0f;}
+    if (rotateX < -400.0f) {rotateX = -400.0f;}
     glutPostRedisplay(); // Request redraw
 }
 
@@ -734,7 +787,16 @@ void keyboard(unsigned char key, int x, int y)
         dz = player_speed * 0.1f;
     }
 
+    if (usevelocity) {
+        velX += speedV * dx * dt;
+        velY += speedV * dy * dt;
+        velZ += speedV * dz * dt;
+        dx = velX * dt;
+        dy = velY * dt;
+        dz = velZ * dt;
+    }
 
+    int has_collided = 1;
     if (dx != 0.0f || dy != 0.0f || dz != 0.0f) {
         for (double f=0.0;f<7.0;f+=1.0) {
             float factor = (float) (1.0 / pow(2.0 , f));
@@ -743,15 +805,21 @@ void keyboard(unsigned char key, int x, int y)
             posY += dy * factor;
             posZ += dz * factor;
             display();
+            has_collided = 0;
             break;
         }
         }
+    }
+    if (has_collided) {
+        velX = 0.0f;
+        velY = 0.0f;
+        velZ = 0.0f;
     }
 
 
     if (key == 'm')
     {
-        printf("Rotate X: %f\tRotate Y: %f\tX: %f\tY: %f\tZ: %f\n", rotateX, rotateY, posX, posY, posZ);
+        usevelocity = 1 - usevelocity;
     }
     if (key == 'n')
     {

@@ -172,14 +172,14 @@ int main() {
                     clients[num_clients].addr = client_addr;
                     clients[num_clients].last_seen = time(NULL);
                     num_clients++;
-                    printf("New client from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                    printf("New client from %s:%d\tAssigned ID: %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),num_clients - 1);
                 } else if (idx != -1) {
                     // Update existing
                     clients[idx].last_seen = time(NULL);
                     clients[idx].position.x = clientmessage.position.x;
                     clients[idx].position.y = clientmessage.position.y;
                     clients[idx].position.z = clientmessage.position.z;
-                    printf("Client %d\tx: %.2f\ty: %.2f\tz: %.2f\n",idx,clients[idx].position.x,clients[idx].position.y,clients[idx].position.z);
+                    //printf("Client %d\tx: %.2f\ty: %.2f\tz: %.2f\n",idx,clients[idx].position.x,clients[idx].position.y,clients[idx].position.z);
                 }
             }
         }
