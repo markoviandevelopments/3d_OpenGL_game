@@ -23,7 +23,7 @@ float rotateSpeed = 5.0f; // Degrees per key press
 const int FPS = 60; // Target frames per second
 const int FRAME_INTERVAL_MS = 1000 / FPS;
 int fps_actual = 60;
-float player_speed = 200.0f;
+float player_speed = 1.0f;
 
 
 float posX = -5.8f;
