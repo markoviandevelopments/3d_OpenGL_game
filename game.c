@@ -72,12 +72,12 @@ int last_fps_time = 0;
 void drawCube(float x, float y, float z, int t)
 {
     // Alternate between yellow and cyan based on t
-    float r = 1.0f;
-    float g = t ? 0.0f : 1.0f;
-    float b = t ? 0.0f : 1.0f;
+    float r = t ? 0.0f : 1.0f;
+    float g = t ? 0.0f : 0.30f;
+    float b = 0.0f;
 
     glBegin(GL_QUADS);
-    glColor3f(r, g, b);
+    glColor4f(r, g, b, 0.9f);
 
     // Front face (normal: 0, 0, 1)
     glNormal3f(0.0f, 0.0f, 1.0f);
