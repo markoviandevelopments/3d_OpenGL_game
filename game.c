@@ -13,7 +13,7 @@
 
 #define MAX_CLIENTS 10
 
-//#define M_PI 3.14159265358979
+#define M_PI 3.14159265358979
 GLuint objList = 0;
 
 // Rotation angles for the cube
@@ -208,6 +208,82 @@ void drawSolidCube(float x, float y, float z, float r, float g, float b, float a
     glEnable(GL_LIGHTING);
 }
 
+void drawSkyDome(float radius, int slices, int stacks)
+{
+    glDisable(GL_LIGHTING);   // Flat colors
+    glDisable(GL_DEPTH_TEST); // Ensure behind everything
+    glDepthMask(GL_FALSE);    // No depth writes
+    glDisable(GL_BLEND);      // Solid colors
+    glDisable(GL_CULL_FACE);  // Avoid winding issues
+
+    // Colors for gradient
+    float orange[3] = {1.0f, 0.4f, 0.2f}; // Horizon
+    float purple[3] = {0.3f, 0.1f, 0.6f}; // Mid-sky
+    float blue[3] = {0.0f, 0.0f, 0.3f};   // Zenith
+
+    for (int i = 0; i < stacks; ++i)
+    {
+        float theta1 = (float)i / stacks * (M_PI / 2.0f); // From 0 (zenith) to pi/2 (horizon)
+        float theta2 = (float)(i + 1) / stacks * (M_PI / 2.0f);
+        float h1 = cosf(theta1); // Normalized height: 1 at zenith, 0 at horizon
+        float h2 = cosf(theta2);
+
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= slices; ++j)
+        { // <= for seam closure
+            float phi = (float)j / slices * 2.0f * M_PI;
+
+            // Vertex 1 (current stack)
+            float x1 = radius * sinf(theta1) * cosf(phi);
+            float y1 = radius * sinf(theta1) * sinf(phi);
+            float z1 = radius * cosf(theta1);
+            // Interp color based on height
+            float r1, g1, b1;
+            if (h1 > 0.5f)
+            {
+                r1 = purple[0] + (blue[0] - purple[0]) * ((h1 - 0.5f) * 2.0f);
+                g1 = purple[1] + (blue[1] - purple[1]) * ((h1 - 0.5f) * 2.0f);
+                b1 = purple[2] + (blue[2] - purple[2]) * ((h1 - 0.5f) * 2.0f);
+            }
+            else
+            {
+                r1 = orange[0] + (purple[0] - orange[0]) * (h1 * 2.0f);
+                g1 = orange[1] + (purple[1] - orange[1]) * (h1 * 2.0f);
+                b1 = orange[2] + (purple[2] - orange[2]) * (h1 * 2.0f);
+            }
+            glColor3f(r1, g1, b1);
+            glVertex3f(x1, y1, z1);
+
+            // Vertex 2 (next stack)
+            float x2 = radius * sinf(theta2) * cosf(phi);
+            float y2 = radius * sinf(theta2) * sinf(phi);
+            float z2 = radius * cosf(theta2);
+            float r2, g2, b2;
+            if (h2 > 0.5f)
+            {
+                r2 = purple[0] + (blue[0] - purple[0]) * ((h2 - 0.5f) * 2.0f);
+                g2 = purple[1] + (blue[1] - purple[1]) * ((h2 - 0.5f) * 2.0f);
+                b2 = purple[2] + (blue[2] - purple[2]) * ((h2 - 0.5f) * 2.0f);
+            }
+            else
+            {
+                r2 = orange[0] + (purple[0] - orange[0]) * (h2 * 2.0f);
+                g2 = orange[1] + (purple[1] - orange[1]) * (h2 * 2.0f);
+                b2 = orange[2] + (purple[2] - orange[2]) * (h2 * 2.0f);
+            }
+            glColor3f(r2, g2, b2);
+            glVertex3f(x2, y2, z2);
+        }
+        glEnd();
+    }
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE); // Re-enable if you add it globally later
+}
+
 void loadOBJ(const char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -380,6 +456,13 @@ void display()
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Draw sky dome
+    glPushMatrix();
+    glTranslatef(posX, posY, posZ); // Center on camera
+    drawSkyDome(100.0f, 20, 10);    // Radius, slices (horizontal detail), stacks (vertical detail)
+    glPopMatrix();
+
     glLoadIdentity();
     // Set camera position
     float dx1 = (float)cos(((double)rotateY) / 360.0 * M_PI);
@@ -584,7 +667,7 @@ void keyboard(unsigned char key, int x, int y)
 
 void init()
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.1f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -608,7 +691,7 @@ void init()
     glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
 
     glMatrixMode(GL_PROJECTION);
-    gluPerspective(45.0f, 1.0f, 0.1f, 100.0f);
+    gluPerspective(45.0f, 1.0f, 0.1f, 500.0f);
     glMatrixMode(GL_MODELVIEW);
 
     // Load OBJ model after OpenGL setup
@@ -620,7 +703,7 @@ void reshape(int w, int h)
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, (float)w / h, 0.1f, 100.0f);
+    gluPerspective(45.0f, (float)w / h, 0.1f, 500.0f);
     glMatrixMode(GL_MODELVIEW);
 }
 
