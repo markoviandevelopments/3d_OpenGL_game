@@ -20,6 +20,10 @@ typedef struct {
     float y;
 } Agent;
 
+typedef struct {
+    Agent agent[10];
+} Agents;
+
 // Client tracking struct
 struct Client {
     struct sockaddr_in addr;
@@ -60,6 +64,11 @@ int client_exists(struct sockaddr_in *new_addr) {
 int main() {
     srand(time(NULL));
     Agent agent;
+    Agents agents;
+    for (int i=0; i<10;i++) {
+        initialize_agent(&agent);
+        agents.agent[i] = agent;
+    }
     initialize_agent(&agent);
     
     int sockfd;
@@ -122,10 +131,13 @@ int main() {
         }
         
         // Update and broadcast agent position (every ~1 sec due to timeout)
-        update_position(&agent);
-        printf("Sent position: (%.2f, %.2f)\n", agent.x, agent.y);
+        for (int i=0;i<10;i++) {
+            update_position(&agents.agent[i]);
+        }
+        
+        printf("Sent position\n");
         for (int i = 0; i < num_clients; i++) {
-            sendto(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&clients[i].addr, sizeof(struct sockaddr_in));
+            sendto(sockfd, &agents, sizeof(Agents), 0, (struct sockaddr *)&clients[i].addr, sizeof(struct sockaddr_in));
         }
         
         // Timeout inactive clients

@@ -60,9 +60,14 @@ typedef struct {
     float y;
 } Agent;
 
+typedef struct {
+    Agent agent[10];
+} Agents;
+
 struct sockaddr_in agent_server_addr;
 int sockfd;
 Agent agent;
+Agents agents;
 
 float enterprise_angle = 90.0f;
 
@@ -681,8 +686,11 @@ void display()
         }
     }
 
+    for (int i=0;i<10;i++) {
+        agent = agents.agent[i];
+        drawSolidCube(agent.x + 25.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
+    }
     
-    drawSolidCube(agent.x + 25.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
 
 
     // Draw OBJ model
@@ -769,7 +777,7 @@ void timer(int value)
 
     struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(sender_addr);
-    ssize_t bytes_received = recvfrom(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&sender_addr, &addr_len);
+    ssize_t bytes_received = recvfrom(sockfd, &agents, sizeof(Agents), 0, (struct sockaddr *)&sender_addr, &addr_len);
     if (bytes_received < 0) {
         if (errno != EWOULDBLOCK && errno != EAGAIN) {
             perror("recvfrom");
