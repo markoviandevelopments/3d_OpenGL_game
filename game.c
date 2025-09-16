@@ -64,10 +64,24 @@ typedef struct {
     Agent agent[10];
 } Agents;
 
+typedef struct
+{
+    float x;
+    float y;
+    float food_type;
+} Food;
+
+typedef struct
+{
+    Food food[25];
+} Foods;
+
 struct sockaddr_in agent_server_addr;
 int sockfd;
 Agent agent;
 Agents agents;
+Food food;
+Foods foods;
 
 float enterprise_angle = 90.0f;
 
@@ -93,12 +107,25 @@ struct ServerMessage {
     struct PlayerInfo playerinfo[MAX_CLIENTS];
 };
 
+// New: Planet definitions (positions, radii; masses assumed proportional to radius for gravity)
+typedef struct
+{
+    float x, y, z;
+    float radius;
+    float mass;
+} Planet;
+
+Planet planets[3] = {
+    {10.0f, 100.0f, -1000.0f, 10.0f, 1000.0f},
+    {100.0f, 500.0f, -3000.0f, 30.0f, 1000.0f},
+    {-200.0f, 2000.0f, -5000.0f, 50.0f, 2500.0f}
+};
+
 int message = 1;
 
 struct ClientMessage clientmessage;
 struct ServerMessage servermessage;
 
-// Frame timing variables
 int frame_count = 0;
 int last_time = 0;
 int current_time = 0;
@@ -108,7 +135,6 @@ int last_fps_time = 0;
 
 void drawCube(float x, float y, float z, int t)
 {
-    // Alternate between yellow and cyan based on t
     float r = t ? 0.0f : 1.0f;
     float g = t ? 0.0f : 0.30f;
     float b = 0.0f;
@@ -245,6 +271,79 @@ void drawSolidCube(float x, float y, float z, float r, float g, float b, float a
     glEnable(GL_LIGHTING);
 }
 
+void drawFood(float cx, float cy, float cz, float radius, int sectorCount, int stackCount, int type)
+{
+    glPushMatrix();
+    glTranslatef(cx, cy, cz);
+
+    GLfloat specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    GLfloat shininess[] = {50.0f};
+    glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
+
+    float sectorStep = 2 * M_PI / sectorCount;
+    float stackStep = M_PI / stackCount;
+
+    for (int i = 0; i < stackCount; ++i)
+    {
+        float stackAngle1 = M_PI / 2 - i * stackStep;
+        float xy1 = radius * cosf(stackAngle1);
+        float z1 = radius * sinf(stackAngle1);
+
+        float stackAngle2 = M_PI / 2 - (i + 1) * stackStep;
+        float xy2 = radius * cosf(stackAngle2);
+        float z2 = radius * sinf(stackAngle2);
+
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= sectorCount; ++j)
+        {
+            float sectorAngle = j * sectorStep;
+
+            float x1 = xy1 * cosf(sectorAngle);
+            float y1 = xy1 * sinf(sectorAngle);
+            float nx1 = x1 / radius;
+            float ny1 = y1 / radius;
+            float nz1 = z1 / radius;
+
+            float x2 = xy2 * cosf(sectorAngle);
+            float y2 = xy2 * sinf(sectorAngle);
+            float nx2 = x2 / radius;
+            float ny2 = y2 / radius;
+            float nz2 = z2 / radius;
+
+            // Procedural color based on type (funky patterns/swirling)
+            float r, g, b;
+            if (type == 0.1)
+            { // Original: uniform red
+                r = 0.8f;
+                g = 0.2f;
+                b = 0.2f;
+            }
+            else if (type == 0.2)
+            { // Radius 30: swirling blue-purple
+                r = 0.3f;
+                g = 0.1f;
+                b = 0.6f;
+            }
+            else
+            { // Radius 50: funky green-yellow spots with mild swirl
+                r = 0.8f;
+                g = 0.6f;
+                b = 0.1f;
+            }
+            glColor3f(r, g, b);
+
+            glNormal3f(nx1, ny1, nz1);
+            glVertex3f(x1, y1, z1);
+
+            glNormal3f(nx2, ny2, nz2);
+            glVertex3f(x2, y2, z2);
+        }
+        glEnd();
+    }
+    glPopMatrix();
+}
+
 void drawSkyDome(float radius, int slices, int stacks)
 {
     glDisable(GL_LIGHTING);   // Flat colors
@@ -343,6 +442,82 @@ void drawSkyDome(float radius, int slices, int stacks)
     glDepthMask(GL_TRUE);
     glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE); // Re-enable if needed elsewhere
+}
+
+void drawPatternedSphere(float cx, float cy, float cz, float radius, int sectorCount, int stackCount, float time, int type)
+{
+    glPushMatrix();
+    glTranslatef(cx, cy, cz);
+
+    // Set specular material (shared for all)
+    GLfloat specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    GLfloat shininess[] = {50.0f};
+    glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
+
+    float sectorStep = 2 * M_PI / sectorCount;
+    float stackStep = M_PI / stackCount;
+
+    for (int i = 0; i < stackCount; ++i)
+    {
+        float stackAngle1 = M_PI / 2 - i * stackStep;
+        float xy1 = radius * cosf(stackAngle1);
+        float z1 = radius * sinf(stackAngle1);
+
+        float stackAngle2 = M_PI / 2 - (i + 1) * stackStep;
+        float xy2 = radius * cosf(stackAngle2);
+        float z2 = radius * sinf(stackAngle2);
+
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= sectorCount; ++j)
+        {
+            float sectorAngle = j * sectorStep;
+
+            float x1 = xy1 * cosf(sectorAngle);
+            float y1 = xy1 * sinf(sectorAngle);
+            float nx1 = x1 / radius;
+            float ny1 = y1 / radius;
+            float nz1 = z1 / radius;
+
+            float x2 = xy2 * cosf(sectorAngle);
+            float y2 = xy2 * sinf(sectorAngle);
+            float nx2 = x2 / radius;
+            float ny2 = y2 / radius;
+            float nz2 = z2 / radius;
+
+            // Procedural color based on type (funky patterns/swirling)
+            float r, g, b;
+            if (type == 0)
+            { // Original: uniform red
+                r = 0.8f;
+                g = 0.2f;
+                b = 0.2f;
+            }
+            else if (type == 1)
+            { // Radius 30: swirling blue-purple
+                float swirl = sinf(stackAngle1 * 5.0f + sectorAngle * 2.0f + time * 2.0f);
+                r = 0.3f + 0.2f * (cosf(sectorAngle + time * 1.5f) * 0.5f + 0.5f);
+                g = 0.1f + 0.4f * (swirl * 0.5f + 0.5f);
+                b = 0.6f + 0.3f * (sinf(stackAngle1 + time) * 0.5f + 0.5f);
+            }
+            else
+            { // Radius 50: funky green-yellow spots with mild swirl
+                float spot = sinf(stackAngle1 * 10.0f + sectorAngle * 10.0f + time * 0.5f);
+                r = 0.8f + 0.2f * spot;
+                g = 0.6f - 0.3f * spot;
+                b = 0.1f + 0.2f * (cosf(sectorAngle + time * 0.8f) * 0.5f + 0.5f);
+            }
+            glColor3f(r, g, b);
+
+            glNormal3f(nx1, ny1, nz1);
+            glVertex3f(x1, y1, z1);
+
+            glNormal3f(nx2, ny2, nz2);
+            glVertex3f(x2, y2, z2);
+        }
+        glEnd();
+    }
+    glPopMatrix();
 }
 
 void loadOBJ(const char *filename)
@@ -537,6 +712,18 @@ int checkCollision(float x_in, float y_in, float z_in) {
         return 1;
     }
     return 0;
+
+    for (int i = 0; i < 3; i++)
+    {
+        double dx_p = x - planets[i].x;
+        double dy_p = y - planets[i].y;
+        double dz_p = z - planets[i].z;
+        double dist_p = sqrt(dx_p * dx_p + dy_p * dy_p + dz_p * dz_p);
+        if (dist_p < planets[i].radius + 0.5)
+        {
+            return 1;
+        }
+    }
 }
 
 void physics() {
@@ -591,6 +778,22 @@ void physics() {
         velX = 0.0f;
         velY = 0.0f;
         velZ = 0.0f;
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        float dx1 = posX - planets[i].x;
+        float dy1 = posY - planets[i].y; // Fixed typo: was =
+        float dz1 = posZ - planets[i].z;
+
+        float dist1 = (float)sqrt(((double)dx1) * ((double)dx1) + ((double)dy1) * ((double)dy1) + ((double)dz1) * ((double)dz1));
+        if (dist1 > 0.001f)
+        {                                                                            // Avoid divide by zero
+            float force = dt * grav_c * (planets[i].mass / (dist1 * dist1 * dist1)); // F = G*m / r^2, direction /r
+            velX -= force * dx1;
+            velY -= force * dy1;
+            velZ -= force * dz1;
+        }
     }
 }
 
@@ -660,8 +863,6 @@ void display()
         drawSolidCube(x,y,0.5f,1.0f,0.5f,0.0f,0.5f);
     }
 
-
-
     // Draw square arena for agent
     float r;
     float g;
@@ -690,8 +891,17 @@ void display()
         agent = agents.agent[i];
         drawSolidCube(agent.x + 25.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
     }
-    
 
+    for (int i = 0; i < 25; i++)
+    {
+        food = foods.food[i];
+        drawFood(food.x + 25.0f, food.y + 5.0f, 0.5f, 0.25f, 12.0f, 12.0f, food.food_type);
+    }
+
+    float anim_time = (float)current_time / 1000.0f;
+    drawPatternedSphere(planets[0].x, planets[0].y, planets[0].z, planets[0].radius, 20, 20, anim_time, 0); // Original, uniform
+    drawPatternedSphere(planets[1].x, planets[1].y, planets[1].z, planets[1].radius, 30, 25, anim_time, 1); // Radius 30, swirling
+    drawPatternedSphere(planets[2].x, planets[2].y, planets[2].z, planets[2].radius, 40, 30, anim_time, 2); // Radius 50, funky
 
     // Draw OBJ model
     if (objList != 0)
@@ -744,7 +954,7 @@ void display()
     sprintf(fpsText2,"Velocities: (%.3f, %.3f, %.3f) | Angles: (%.2f, %.2f)", velX,velY,velZ,rotateX,rotateY);
     renderText(10, glutGet(GLUT_WINDOW_HEIGHT) - 60, GLUT_BITMAP_HELVETICA_18, fpsText2);
     // Example: Static instructions
-    renderText(10, 30, GLUT_BITMAP_HELVETICA_12, "WASD: Move | Arrows: Look | N/J/I/L/K: Control Cube");
+    renderText(10, 30, GLUT_BITMAP_HELVETICA_12, "WASD: Move | Arrows: Look | N/J/I/L/K: Control Cube | SHOUTOUT PRESTON");
 
     glutSwapBuffers();
     physics();

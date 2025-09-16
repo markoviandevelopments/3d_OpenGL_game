@@ -24,6 +24,16 @@ typedef struct {
     Agent agent[10];
 } Agents;
 
+typedef struct {
+    float x;
+    float y;
+    float food_type;
+} Food;
+
+typedef struct {
+    Food food[25];
+} Foods;
+
 // Client tracking struct
 struct Client {
     struct sockaddr_in addr;
@@ -34,21 +44,26 @@ struct Client clients[MAX_CLIENTS];
 int num_clients = 0;
 
 void initialize_agent(Agent *agent) {
-    agent->x = GRID_SIZE / 2.0;
-    agent->y = GRID_SIZE / 2.0;
+    (*agent).x = GRID_SIZE / 2.0;
+    (*agent).y = GRID_SIZE / 2.0;
+}
+
+void initialize_food(Food *food) {
+    (*food).x = GRID_SIZE / 2.0;
+    (*food).y = GRID_SIZE / 2.0;
 }
 
 void update_position(Agent *agent) {
     float dx = ((float)rand() / RAND_MAX - 0.5) * 2 * STEP_SIZE;
     float dy = ((float)rand() / RAND_MAX - 0.5) * 2 * STEP_SIZE;
     
-    agent->x += dx;
-    agent->y += dy;
+    (*agent).x += dx;
+    (*agent).y += dy;
     
-    if (agent->x < 0) agent->x = 0;
-    if (agent->x > GRID_SIZE) agent->x = GRID_SIZE;
-    if (agent->y < 0) agent->y = 0;
-    if (agent->y > GRID_SIZE) agent->y = GRID_SIZE;
+    if ((*agent).x < 0) (*agent).x = 0;
+    if ((*agent).x > GRID_SIZE) (*agent).x = GRID_SIZE;
+    if ((*agent).y < 0) (*agent).y = 0;
+    if ((*agent).y > GRID_SIZE) (*agent).y = GRID_SIZE;
 }
 
 // Check if client address already exists
@@ -65,11 +80,18 @@ int main() {
     srand(time(NULL));
     Agent agent;
     Agents agents;
+    Food food;
+    Foods foods;
     for (int i=0; i<10;i++) {
         initialize_agent(&agent);
         agents.agent[i] = agent;
     }
     initialize_agent(&agent);
+    for (int i=0; i<25; i++) {
+        initialize_food(&food);
+        foods.food[i] = food;
+    }
+    initialize_food(&agent);
     
     int sockfd;
     struct sockaddr_in server_addr;
