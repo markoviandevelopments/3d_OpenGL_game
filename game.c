@@ -679,15 +679,7 @@ void display()
     }
 
     
-    drawSolidCube(agent.x + 15.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
-
-
-
-
-    
-
-
-
+    drawSolidCube(agent.x + 25.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
 
 
     // Draw OBJ model
@@ -811,32 +803,6 @@ void keyboard(unsigned char key, int x, int y)
     float dx = 0;
     float dy = 0;
     float dz = 0;
-    // float a1 = sqrt(pow(cos(((double) rotateY) / 360.0 * M_PI),2.0) + pow(sin(((double) rotateY) / 360.0 * M_PI),2.0));
-    // float rotateX1 = atan(((double) rotateX) / a1);
-    // if (key == 'w')
-    // {
-    //     dx = player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-    //     dy = player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-    //     dz = player_speed * (float) 0.1 * cos(((double) rotateX1) / 360.0 * M_PI);
-    // }
-    // if (key == 's')
-    // {
-    //     dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY) / 360.0 * M_PI);
-    //     dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY) / 360.0 * M_PI);
-    //     dz = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateX1) / 360.0 * M_PI);
-    // }
-    // if (key == 'a')
-    // {
-    //     dx = player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-    //     dy = player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-    //     dz = player_speed * (float) 0.0 * cos(((double) rotateX1 + 180.0) / 360.0 * M_PI);
-    // }
-    // if (key == 'd')
-    // {
-    //     dx = -1.0f * player_speed * (float) 0.1 * cos(((double) rotateY + 180.0) / 360.0 * M_PI);
-    //     dy = -1.0f * player_speed * (float) 0.1 * sin(((double) rotateY + 180.0) / 360.0 * M_PI);
-    //     dz = -1.0f * player_speed * (float) 0.0 * cos(((double) rotateX1 + 180.0) / 360.0 * M_PI);
-    // }
 
     double yaw = ((double) rotateY) * M_PI / 180.0;
     double pitch = ((double) rotateX) * M_PI / 180.0;
