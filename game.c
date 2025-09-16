@@ -76,12 +76,6 @@ typedef struct
     Food food[25];
 } Foods;
 
-struct sockaddr_in agent_server_addr;
-int sockfd;
-Agent agent;
-Agents agents;
-Food food;
-Foods foods;
 
 float enterprise_angle = 90.0f;
 
@@ -102,6 +96,19 @@ struct PlayerInfo {
     struct Position position;
 };
 
+typedef struct {
+    float food_row[10];
+} FoodRow;
+
+typedef struct {
+    FoodRow food_col[10];
+} FoodGrid;
+
+typedef struct {
+    Agents agents;
+    FoodGrid foodgrid;
+} AgentServerInfo;
+
 struct ServerMessage {
     float browniancube[2]; // x and y positions of cube on checkerboard
     struct PlayerInfo playerinfo[MAX_CLIENTS];
@@ -120,6 +127,19 @@ Planet planets[3] = {
     {100.0f, 500.0f, -3000.0f, 30.0f, 1000.0f},
     {-200.0f, 2000.0f, -5000.0f, 50.0f, 2500.0f}
 };
+
+
+
+struct sockaddr_in agent_server_addr;
+int sockfd;
+Agent agent;
+Agents agents;
+Food food;
+Foods foods;
+
+FoodRow foodrow;
+FoodGrid foodgrid;
+AgentServerInfo agentserverinfo;
 
 int message = 1;
 
@@ -867,26 +887,44 @@ void display()
     float r;
     float g;
     float b;
+    // for (float x = 0.0f; x <= 10.0f; x += 1.0f)
+    // {
+    //     t = (int)x % 2;
+    //     for (float y = 0.0f; y <= 10.0f; y += 1.0f)
+    //     {
+    //         if (t) {
+    //             r = 0.0f;
+    //             g = 0.0f;
+    //             b = 0.0f;
+    //         } else {
+    //             r = 1.0f;
+    //             g = 1.0f;
+    //             b = 1.0f;
+    //         }
+    //         drawSolidCube(x + 25.0f,y+5.0f,-0.5f,r,g,b,0.5f);
+
+    //         t = 1 - t;
+    //     }
+    // }
+
     for (float x = 0.0f; x <= 10.0f; x += 1.0f)
     {
         t = (int)x % 2;
         for (float y = 0.0f; y <= 10.0f; y += 1.0f)
         {
-            if (t) {
-                r = 0.0f;
-                g = 0.0f;
-                b = 0.0f;
-            } else {
-                r = 1.0f;
-                g = 1.0f;
-                b = 1.0f;
-            }
+            int x1 = (int) x;
+            int y1 = (int) y;
+            r = agentserverinfo.foodgrid.food_col[x1].food_row[y1];
+            g = 0.0f;
+            b = 0.0f;
+
             drawSolidCube(x + 25.0f,y+5.0f,-0.5f,r,g,b,0.5f);
 
             t = 1 - t;
         }
     }
 
+    agents = agentserverinfo.agents;
     for (int i=0;i<10;i++) {
         agent = agents.agent[i];
         drawSolidCube(agent.x + 25.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
@@ -987,7 +1025,7 @@ void timer(int value)
 
     struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(sender_addr);
-    ssize_t bytes_received = recvfrom(sockfd, &agents, sizeof(Agents), 0, (struct sockaddr *)&sender_addr, &addr_len);
+    ssize_t bytes_received = recvfrom(sockfd, &agentserverinfo, sizeof(AgentServerInfo), 0, (struct sockaddr *)&sender_addr, &addr_len);
     if (bytes_received < 0) {
         if (errno != EWOULDBLOCK && errno != EAGAIN) {
             perror("recvfrom");

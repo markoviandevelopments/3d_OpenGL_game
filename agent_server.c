@@ -25,6 +25,14 @@ typedef struct {
 } Agents;
 
 typedef struct {
+    float food_row[10];
+} FoodRow;
+
+typedef struct {
+    FoodRow food_col[10];
+} FoodGrid;
+
+typedef struct {
     float x;
     float y;
     float food_type;
@@ -34,11 +42,30 @@ typedef struct {
     Food food[25];
 } Foods;
 
+typedef struct {
+    Agents agents;
+    FoodGrid foodgrid;
+} AgentServerInfo;
+
 // Client tracking struct
 struct Client {
     struct sockaddr_in addr;
     time_t last_seen;
 };
+
+void initialize_row(FoodRow *foodrow) {
+    for (int i=0;i<10;i++) {
+        (*foodrow).food_row[i] = ((float) (rand() % 100)) / 100.0f;
+    }
+}
+
+void initialize_grid(FoodGrid *foodgrid) {
+    for (int i=0;i<10;i++) {
+        FoodRow foodrow;
+        initialize_row(&foodrow);
+        (*foodgrid).food_col[i] = foodrow;
+    }
+}
 
 struct Client clients[MAX_CLIENTS];
 int num_clients = 0;
@@ -82,6 +109,13 @@ int main() {
     Agents agents;
     Food food;
     Foods foods;
+    FoodRow foodrow;
+    FoodGrid foodgrid;
+    AgentServerInfo agentserverinfo;
+
+    initialize_grid(&foodgrid);
+    agentserverinfo.foodgrid = foodgrid;
+
     for (int i=0; i<10;i++) {
         initialize_agent(&agent);
         agents.agent[i] = agent;
@@ -156,10 +190,12 @@ int main() {
         for (int i=0;i<10;i++) {
             update_position(&agents.agent[i]);
         }
+
+        agentserverinfo.agents = agents;
         
         printf("Sent position\n");
         for (int i = 0; i < num_clients; i++) {
-            sendto(sockfd, &agents, sizeof(Agents), 0, (struct sockaddr *)&clients[i].addr, sizeof(struct sockaddr_in));
+            sendto(sockfd, &agentserverinfo, sizeof(AgentServerInfo), 0, (struct sockaddr *)&clients[i].addr, sizeof(struct sockaddr_in));
         }
         
         // Timeout inactive clients
