@@ -763,10 +763,21 @@ void timer(int value)
     sendto(client_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr *)&server_addr, addr_len);
     message = 1;
 
+
     struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(sender_addr);
-    ssize_t bytes_recieved = recvfrom(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&sender_addr, &addr_len);
-    if (bytes_recieved <= 0) {
+    ssize_t bytes_received = recvfrom(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&sender_addr, &addr_len);
+    if (bytes_received < 0) {
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+            perror("recvfrom");
+        }
+        // No data: Optionally keep previous agent position or handle as needed
+    } else if (bytes_received == 0) {
+        // Rare for UDP, but handle if needed
+    } else {
+        // Successfully received: Use agent.x, agent.y
+    }
+    if (bytes_received <= 0) {
         printf("Agent Server recieve failed\n");
     }
 
@@ -978,6 +989,7 @@ int main(int argc, char **argv)
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);
     
     agent_server_addr.sin_family = AF_INET;
     agent_server_addr.sin_addr.s_addr = INADDR_ANY;
