@@ -12,8 +12,10 @@
 #include <float.h>
 
 #define MAX_CLIENTS 10
-#define DRAW_DOME 0
+#define DRAW_DOME 1
 #define RENDER_DIST 5000.0f
+#define SCREEN_WIDTH 4500
+#define SCREEN_HEIGHT 2100
 
 // #define M_PI 3.14159265358979
 GLuint objList = 0;
@@ -48,6 +50,16 @@ float cubeY = 5.0f;
 int client_sock;                // Global client socket
 struct sockaddr_in server_addr; // Server address for sendto
 socklen_t addr_len = sizeof(server_addr);
+
+
+typedef struct {
+    float x;
+    float y;
+} Agent;
+
+struct sockaddr_in agent_server_addr;
+int sockfd;
+Agent agent;
 
 float enterprise_angle = 90.0f;
 
@@ -536,7 +548,7 @@ void physics() {
         float dz1 = posZ - (-1000.0f);
 
         float dist1 = (float) sqrt(((double) dx1) * ((double) dx1) + ((double) dy1) * ((double) dy1) + ((double) dz1) * ((double) dz1));
-        
+
         velX -= dt * grav_c * dx1 / dist1 / dist1;
         velY -= dt * grav_c * dy1 / dist1 / dist1;
         velZ -= dt * grav_c * dz1 / dist1 / dist1;
@@ -551,7 +563,7 @@ void physics() {
         velZ = 0.0f;
     }
 
-    
+
     //velZ -= grav_c * dt;
 
     int has_collided = 1;
@@ -615,7 +627,7 @@ void display()
     GLfloat light_position[] = {4.0f, 4.0f, 10.0f, 0.0f};
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-    // Draw checkerboard
+    // Draw checkerboard within round arena
     float z = -0.5f;
     int t = 0;
     for (float x = 0.0f; x <= 20.0f; x += 1.0f)
@@ -629,7 +641,7 @@ void display()
             if (dist < 10.0) {
                 drawCube(x, y, z, t);
             }
-            
+
             t = 1 - t;
         }
     }
@@ -640,7 +652,43 @@ void display()
         drawSolidCube(x,y,0.5f,1.0f,0.5f,0.0f,0.5f);
     }
 
+
+
+    // Draw square arena for agent
+    float r;
+    float g;
+    float b;
+    for (float x = 0.0f; x <= 10.0f; x += 1.0f)
+    {
+        t = (int)x % 2;
+        for (float y = 0.0f; y <= 10.0f; y += 1.0f)
+        {
+            if (t) {
+                r = 0.0f;
+                g = 0.0f;
+                b = 0.0f;
+            } else {
+                r = 1.0f;
+                g = 1.0f;
+                b = 1.0f;
+            }
+            drawSolidCube(x + 25.0f,y+5.0f,-0.5f,r,g,b,0.5f);
+
+            t = 1 - t;
+        }
+    }
+
     
+    drawSolidCube(agent.x + 15.0f,agent.y + 5.0f,0.5f,1.0f,0.0f,0.0f,1.0f);
+
+
+
+
+    
+
+
+
+
 
     // Draw OBJ model
     if (objList != 0)
@@ -665,7 +713,7 @@ void display()
     drawSolidCube(cubeX, cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
 
     for (int i=0; i<MAX_CLIENTS; i++) {
-        
+
         float xp = servermessage.playerinfo[i].position.x;
         float yp = servermessage.playerinfo[i].position.y;
         float zp = servermessage.playerinfo[i].position.z;
@@ -682,7 +730,7 @@ void display()
         } else if (i > 0) {
             drawSolidCube(xp, yp, zp, 0.0f, 1.0f, 0.0f, 0.5f);
         }
-        
+
     }
 
     // Render HUD text
@@ -723,6 +771,13 @@ void timer(int value)
     sendto(client_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr *)&server_addr, addr_len);
     message = 1;
 
+    struct sockaddr_in sender_addr;
+    socklen_t addr_len = sizeof(sender_addr);
+    ssize_t bytes_recieved = recvfrom(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&sender_addr, &addr_len);
+    if (bytes_recieved <= 0) {
+        printf("Agent Server recieve failed\n");
+    }
+
     glutPostRedisplay();
     glutTimerFunc(FRAME_INTERVAL_MS, timer, 0);
 }
@@ -741,7 +796,7 @@ void specialKeys(int key, int x, int y) {
         case GLUT_KEY_RIGHT: // Rotate right
             rotateY -= rotateSpeed;
             break;
-        
+
     }
 
     if (rotateX > 400.0f) {rotateX = 400.0f;}
@@ -941,7 +996,7 @@ int main(int argc, char **argv)
     // Set server address
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8042);
-    server_addr.sin_addr.s_addr = inet_addr("192.168.1.126"); // Your server IP
+    server_addr.sin_addr.s_addr = inet_addr("192.168.1.126");
 
     // Send initial buffer to register with server
     clientmessage.command = 1;
@@ -950,9 +1005,30 @@ int main(int argc, char **argv)
     clientmessage.position.z = posZ;
     sendto(client_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr *)&server_addr, addr_len);
 
+
+    // Set up connection to agent server
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    agent_server_addr.sin_family = AF_INET;
+    agent_server_addr.sin_addr.s_addr = INADDR_ANY;
+    agent_server_addr.sin_port = htons(8098);
+    
+    if (bind(sockfd, (struct sockaddr *)&agent_server_addr, sizeof(agent_server_addr)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    printf("Client listening on port %d...\n", 8098);
+
+
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(800, 800);
+    glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     glutCreateWindow("Willohlandia");
     init();
     glutDisplayFunc(display);
@@ -967,6 +1043,7 @@ int main(int argc, char **argv)
         glDeleteLists(objList, 1);
     }
 
+    close(sockfd);
     close(client_sock);
     return 0;
 }

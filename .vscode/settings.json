@@ -6,6 +6,7 @@
         "string.h": "c",
         "cmath": "c",
         "complex": "c",
-        "valarray": "c"
+        "valarray": "c",
+        "cstdlib": "c"
     }
 }
