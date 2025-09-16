@@ -14,8 +14,11 @@
 #define MAX_CLIENTS 10
 #define DRAW_DOME 1
 #define RENDER_DIST 5000.0f
-#define SCREEN_WIDTH 4500
-#define SCREEN_HEIGHT 2100
+#define SCREEN_WIDTH 1000
+#define SCREEN_HEIGHT 1000
+
+#define AGENT_SERVER_PORT 8099
+#define HEARTBEAT_INTERVAL 300
 
 // #define M_PI 3.14159265358979
 GLuint objList = 0;
@@ -780,6 +783,13 @@ void timer(int value)
     if (bytes_received <= 0) {
         printf("Agent Server recieve failed\n");
     }
+    static int heartbeat_counter = 0;
+    heartbeat_counter++;
+    if (heartbeat_counter >= HEARTBEAT_INTERVAL) {
+        int dummy = 1;  // Dummy heartbeat message
+        sendto(sockfd, &dummy, sizeof(int), 0, (struct sockaddr *)&agent_server_addr, sizeof(agent_server_addr));
+        heartbeat_counter = 0;
+    }
 
     glutPostRedisplay();
     glutTimerFunc(FRAME_INTERVAL_MS, timer, 0);
@@ -993,15 +1003,25 @@ int main(int argc, char **argv)
     
     agent_server_addr.sin_family = AF_INET;
     agent_server_addr.sin_addr.s_addr = INADDR_ANY;
-    agent_server_addr.sin_port = htons(8098);
+    agent_server_addr.sin_addr.s_addr = inet_addr("192.168.1.126");
+    agent_server_addr.sin_port = htons(AGENT_SERVER_PORT);
     
-    if (bind(sockfd, (struct sockaddr *)&agent_server_addr, sizeof(agent_server_addr)) < 0) {
+    // Bind to dynamic port (0 = OS chooses)
+    struct sockaddr_in local_addr;
+    memset(&local_addr, 0, sizeof(local_addr));
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_addr.s_addr = INADDR_ANY;
+    local_addr.sin_port = htons(0);  // Dynamic port
+
+    if (bind(sockfd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
     
-    printf("Client listening on port %d...\n", 8098);
+    int dummy = 1;
+    sendto(sockfd, &dummy, sizeof(int), 0, (struct sockaddr *)&agent_server_addr, sizeof(agent_server_addr));
 
+    printf("Client bound to dynamic port and registered with agent server...\n");
 
 
     glutInit(&argc, argv);

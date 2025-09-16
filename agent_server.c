@@ -5,10 +5,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #define SERVER_PORT 8099
-#define CLIENT_PORT 8098
-#define CLIENT_IP "192.168.1.126"
+#define MAX_CLIENTS 10
+#define CLIENT_TIMEOUT_SEC 5
 #define GRID_SIZE 10.0
 #define STEP_SIZE 0.5
 
@@ -16,6 +19,15 @@ typedef struct {
     float x;
     float y;
 } Agent;
+
+// Client tracking struct
+struct Client {
+    struct sockaddr_in addr;
+    time_t last_seen;
+};
+
+struct Client clients[MAX_CLIENTS];
+int num_clients = 0;
 
 void initialize_agent(Agent *agent) {
     agent->x = GRID_SIZE / 2.0;
@@ -35,19 +47,34 @@ void update_position(Agent *agent) {
     if (agent->y > GRID_SIZE) agent->y = GRID_SIZE;
 }
 
+// Check if client address already exists
+int client_exists(struct sockaddr_in *new_addr) {
+    for (int i = 0; i < num_clients; i++) {
+        if (memcmp(&clients[i].addr, new_addr, sizeof(struct sockaddr_in)) == 0) {
+            return i; // Return index if found
+        }
+    }
+    return -1;
+}
+
 int main() {
     srand(time(NULL));
     Agent agent;
     initialize_agent(&agent);
     
     int sockfd;
-    struct sockaddr_in server_addr, client_addr;
+    struct sockaddr_in server_addr;
+    fd_set read_fds;
+    int max_fd;
     
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
+    
+    // Set non-blocking
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);
     
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -58,20 +85,62 @@ int main() {
         exit(EXIT_FAILURE);
     }
     
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_port = htons(CLIENT_PORT);
-    if (inet_pton(AF_INET, CLIENT_IP, &client_addr.sin_addr) <= 0) {
-        perror("Invalid client address");
-        exit(EXIT_FAILURE);
-    }
-    
-    printf("Server sending to %s:%d...\n", CLIENT_IP, CLIENT_PORT);
+    printf("Agent server listening on port %d...\n", SERVER_PORT);
     
     while (1) {
+        FD_ZERO(&read_fds);
+        FD_SET(sockfd, &read_fds);
+        max_fd = sockfd;
+        
+        // Select with 1-second timeout for updates
+        struct timeval tv = {1, 0};
+        int activity = select(max_fd + 1, &read_fds, NULL, NULL, &tv);
+        
+        if (activity < 0 && errno != EINTR) {
+            perror("select");
+        }
+        
+        // Handle incoming registrations/heartbeats
+        if (FD_ISSET(sockfd, &read_fds)) {
+            struct sockaddr_in client_addr;
+            socklen_t addr_len = sizeof(client_addr);
+            char buffer[1024]; // Dummy buffer for any message
+            ssize_t bytes = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &addr_len);
+            if (bytes >= 0) {
+                int idx = client_exists(&client_addr);
+                if (idx == -1 && num_clients < MAX_CLIENTS) {
+                    // New client
+                    clients[num_clients].addr = client_addr;
+                    clients[num_clients].last_seen = time(NULL);
+                    num_clients++;
+                    printf("New client registered: %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                } else if (idx != -1) {
+                    // Update existing
+                    clients[idx].last_seen = time(NULL);
+                }
+            }
+        }
+        
+        // Update and broadcast agent position (every ~1 sec due to timeout)
         update_position(&agent);
-        sendto(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&client_addr, sizeof(client_addr));
         printf("Sent position: (%.2f, %.2f)\n", agent.x, agent.y);
-        sleep(1);
+        for (int i = 0; i < num_clients; i++) {
+            sendto(sockfd, &agent, sizeof(Agent), 0, (struct sockaddr *)&clients[i].addr, sizeof(struct sockaddr_in));
+        }
+        
+        // Timeout inactive clients
+        time_t now = time(NULL);
+        for (int i = 0; i < num_clients; i++) {
+            if (now - clients[i].last_seen > CLIENT_TIMEOUT_SEC) {
+                printf("Timed out client: %s:%d\n", inet_ntoa(clients[i].addr.sin_addr), ntohs(clients[i].addr.sin_port));
+                // Remove by shifting
+                for (int j = i; j < num_clients - 1; j++) {
+                    clients[j] = clients[j + 1];
+                }
+                num_clients--;
+                i--; // Re-check index
+            }
+        }
     }
     
     close(sockfd);
