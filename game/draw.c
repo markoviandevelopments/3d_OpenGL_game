@@ -91,6 +91,89 @@ void drawCubeBase(float x, float y, float z, float r, float g, float b, float a,
     }
 }
 
+void drawCubeBaseWidthSpec(float x, float y, float z, float r, float g, float b, float a, int drawEdges, float width)
+{
+    glBegin(GL_QUADS);
+    glColor4f(r, g, b, a);
+
+    // Front face
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(0.0f - width + x, 0.0f - width + y, width + z);
+    glVertex3f(width + x, 0.0f - width + y, width + z);
+    glVertex3f(width + x, width + y, width + z);
+    glVertex3f(0.0f - width + x, width + y, width + z);
+
+    // Back face
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glVertex3f(0.0f - width + x, 0.0f - width + y, 0.0f - width + z);
+    glVertex3f(0.0f - width + x, width + y, 0.0f - width + z);
+    glVertex3f(width + x, width + y, 0.0f - width + z);
+    glVertex3f(width + x, 0.0f - width + y, 0.0f - width + z);
+
+    // Top face
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(0.0f - width + x, width + y, 0.0f - width + z);
+    glVertex3f(0.0f - width + x, width + y, width + z);
+    glVertex3f(width + x, width + y, width + z);
+    glVertex3f(width + x, width + y, 0.0f - width + z);
+
+    // Bottom face
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glVertex3f(0.0f - width + x, 0.0f - width + y, 0.0f - width + z);
+    glVertex3f(width + x, 0.0f - width + y, 0.0f - width + z);
+    glVertex3f(width + x, 0.0f - width + y, width + z);
+    glVertex3f(0.0f - width + x, 0.0f - width + y, width + z);
+
+    // Right face
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(width + x, 0.0f - width + y, 0.0f - width + z);
+    glVertex3f(width + x, width + y, 0.0f - width + z);
+    glVertex3f(width + x, width + y, width + z);
+    glVertex3f(width + x, 0.0f - width + y, width + z);
+
+    // Left face
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f - width + x, 0.0f - width + y, 0.0f - width + z);
+    glVertex3f(0.0f - width + x, 0.0f - width + y, width + z);
+    glVertex3f(0.0f - width + x, width + y, width + z);
+    glVertex3f(0.0f - width + x, width + y, 0.0f - width + z);
+
+    glEnd();
+
+    if (drawEdges)
+    {
+        glDisable(GL_LIGHTING);
+        glBegin(GL_LINES);
+        glColor3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f - width + x, 0.0f - width + y, width + z);
+        glVertex3f(width + x, 0.0f - width + y, width + z);
+        glVertex3f(width + x, 0.0f - width + y, width + z);
+        glVertex3f(width + x, width + y, width + z);
+        glVertex3f(width + x, width + y, width + z);
+        glVertex3f(0.0f - width + x, width + y, width + z);
+        glVertex3f(0.0f - width + x, width + y, width + z);
+        glVertex3f(0.0f - width + x, 0.0f - width + y, width + z);
+        glVertex3f(0.0f - width + x, 0.0f - width + y, 0.0f - width + z);
+        glVertex3f(width + x, 0.0f - width + y, 0.0f - width + z);
+        glVertex3f(width + x, 0.0f - width + y, 0.0f - width + z);
+        glVertex3f(width + x, width + y, 0.0f - width + z);
+        glVertex3f(width + x, width + y, 0.0f - width + z);
+        glVertex3f(0.0f - width + x, width + y, 0.0f - width + z);
+        glVertex3f(0.0f - width + x, width + y, 0.0f - width + z);
+        glVertex3f(0.0f - width + x, 0.0f - width + y, 0.0f - width + z);
+        glVertex3f(0.0f - width + x, 0.0f - width + y, width + z);
+        glVertex3f(0.0f - width + x, 0.0f - width + y, 0.0f - width + z);
+        glVertex3f(width + x, 0.0f - width + y, width + z);
+        glVertex3f(width + x, 0.0f - width + y, 0.0f - width + z);
+        glVertex3f(width + x, width + y, width + z);
+        glVertex3f(width + x, width + y, 0.0f - width + z);
+        glVertex3f(0.0f - width + x, width + y, width + z);
+        glVertex3f(0.0f - width + x, width + y, 0.0f - width + z);
+        glEnd();
+        glEnable(GL_LIGHTING);
+    }
+}
+
 void drawCube(float x, float y, float z, int textured)
 {
     float r = textured ? 0.0f : 1.0f;
@@ -428,7 +511,7 @@ void display(void)
     for (int i = 0; i < 10; i++)
     {
         Agent agent = gameState.agents.agent[i];
-        drawSolidCube(agent.x + 25.0f, agent.y + 5.0f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f);
+        drawCubeBaseWidthSpec(agent.x + 25.0f, agent.y + 5.0f, 0.201f, 0.0f, 0.0f, 0.5f, 1.0f,1,0.2f);
     }
 
     for (int i = 0; i < 25; i++)
