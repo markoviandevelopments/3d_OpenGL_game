@@ -18,6 +18,9 @@
 typedef struct {
     float x;
     float y;
+    float r;
+    float g;
+    float b;
 } Agent;
 
 typedef struct {
@@ -71,8 +74,11 @@ struct Client clients[MAX_CLIENTS];
 int num_clients = 0;
 
 void initialize_agent(Agent *agent) {
-    (*agent).x = GRID_SIZE / 2.0;
-    (*agent).y = GRID_SIZE / 2.0;
+    (*agent).x = ((float) (rand() % 1000)) / 1000.0f * GRID_SIZE;
+    (*agent).y = ((float) (rand() % 1000)) / 1000.0f * GRID_SIZE;
+    (*agent).r = ((float) (rand() % 1000)) / 1000.0f;
+    (*agent).g = ((float) (rand() % 1000)) / 1000.0f;
+    (*agent).b = ((float) (rand() % 1000)) / 1000.0f;
 }
 
 void initialize_food(Food *food) {

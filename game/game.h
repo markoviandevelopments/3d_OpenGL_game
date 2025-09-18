@@ -28,6 +28,7 @@
 typedef struct
 {
     float x, y;
+    float r,g,b;
 } Agent;
 
 typedef struct

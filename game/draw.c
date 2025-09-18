@@ -511,7 +511,7 @@ void display(void)
     for (int i = 0; i < 10; i++)
     {
         Agent agent = gameState.agents.agent[i];
-        drawCubeBaseWidthSpec(agent.x + 25.0f, agent.y + 5.0f, 0.201f, 0.0f, 0.0f, 0.5f, 1.0f,1,0.2f);
+        drawCubeBaseWidthSpec(agent.x + 25.0f, agent.y + 5.0f, 0.201f, agent.r, agent.g, agent.b, 1.0f,1,0.2f);
     }
 
     for (int i = 0; i < 25; i++)
