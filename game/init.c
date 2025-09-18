@@ -43,4 +43,5 @@ void initGL(void)
 
     // Load OBJ model
     loadOBJ("assets/eprod.obj");
+    loadOBJ2("assets/prestoncoin.obj");
 }

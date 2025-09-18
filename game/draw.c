@@ -534,15 +534,40 @@ void display(void)
             gameState.enterpriseAngle += 10.0f;
         }
         glPushMatrix();
-        glTranslatef(12.0f, 8.0f, 1.0f);
+        glTranslatef(8.0f, 16.0f, 0.5f);
         glScalef(0.025f, 0.025f, 0.025f);
+        glRotatef(90.0f, 0.0f, 1.0f, 1.0f);
         glRotatef(gameState.enterpriseAngle, 1.0f, 0.0f, 0.0f);
-        glColor3f(0.0f, 0.0f, 1.0f);
-        GLfloat obj_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
-        GLfloat obj_shininess[] = {100.0f};
+        glColor3f(0.0f, 0.0f, 0.5f);
+        float spec_in = 0.0f;
+        float shin_in = 0.0f;
+        GLfloat obj_specular[] = {spec_in, spec_in, spec_in, spec_in};
+        GLfloat obj_shininess[] = {shin_in};
         glMaterialfv(GL_FRONT, GL_SPECULAR, obj_specular);
         glMaterialfv(GL_FRONT, GL_SHININESS, obj_shininess);
         glCallList(gameState.objList);
+        glPopMatrix();
+    }
+
+        if (gameState.objList2 != 0)
+    {
+        if (gameState.frameCount % 20 == 0)
+        {
+            gameState.enterpriseAngle += 10.0f;
+        }
+        glPushMatrix();
+        glTranslatef(8.0f, 4.0f, 1.5f);
+        glScalef(0.025f, 0.025f, 0.025f);
+        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+        glRotatef(gameState.enterpriseAngle, 1.0f, 0.0f, 0.0f);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        float spec_in = 0.0f;
+        float shin_in = 0.0f;
+        GLfloat obj_specular[] = {spec_in, spec_in, spec_in, spec_in};
+        GLfloat obj_shininess[] = {shin_in};
+        glMaterialfv(GL_FRONT, GL_SPECULAR, obj_specular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, obj_shininess);
+        glCallList(gameState.objList2);
         glPopMatrix();
     }
 

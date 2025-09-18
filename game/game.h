@@ -119,6 +119,7 @@ typedef struct
     Foods foods;
     FoodGrid foodGrid;
     Planet planets[3];
+    GLuint objList2;
 } GameState;
 
 extern GameState gameState;
