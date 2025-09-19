@@ -85,7 +85,6 @@ void updateRotation()
 
     if (specialKeyStates[GLUT_KEY_UP])
     {
-<<<<<<< Updated upstream
         gameState.rotateX -= rotateSpeed * dt / 0.1f; // Was 0.005f
     }
     if (specialKeyStates[GLUT_KEY_DOWN])
@@ -99,21 +98,6 @@ void updateRotation()
     if (specialKeyStates[GLUT_KEY_RIGHT])
     {
         gameState.rotateY -= rotateSpeed * dt / 0.1f;
-=======
-        gameState.rotateX -= rotateSpeed * dt / 0.05f; // Was 0.005f
-    }
-    if (specialKeyStates[GLUT_KEY_DOWN])
-    {
-        gameState.rotateX += rotateSpeed * dt / 0.05f;
-    }
-    if (specialKeyStates[GLUT_KEY_LEFT])
-    {
-        gameState.rotateY += rotateSpeed * dt / 0.05f;
-    }
-    if (specialKeyStates[GLUT_KEY_RIGHT])
-    {
-        gameState.rotateY -= rotateSpeed * dt / 0.05f;
->>>>>>> Stashed changes
     }
 
     if (gameState.rotateX > 400.0f)
@@ -150,41 +134,24 @@ void updateMovement()
 
     if (gameState.useVelocity)
     {
-<<<<<<< Updated upstream
         gameState.velX += gameState.speedV * dx * gameState.dt / 0.05f;
         gameState.velY += gameState.speedV * dy * gameState.dt / 0.05f;
         gameState.velZ += gameState.speedV * dz * gameState.dt / 0.05f;
-=======
-        gameState.velX += gameState.speedV * dx * gameState.dt / 0.005f;
-        gameState.velY += gameState.speedV * dy * gameState.dt / 0.005f;
-        gameState.velZ += gameState.speedV * dz * gameState.dt / 0.005f;
->>>>>>> Stashed changes
         dx = gameState.velX * gameState.dt;
         dy = gameState.velY * gameState.dt;
         dz = gameState.velZ * gameState.dt;
     }
     else
     {
-<<<<<<< Updated upstream
         dx *= gameState.dt / 0.05f;
         dy *= gameState.dt / 0.05f;
         dz *= gameState.dt / 0.05f;
-=======
-        dx *= gameState.dt / 0.005f;
-        dy *= gameState.dt / 0.005f;
-        dz *= gameState.dt / 0.005f;
->>>>>>> Stashed changes
     }
 
     int collided = 1;
     if (dx != 0.0f || dy != 0.0f || dz != 0.0f)
     {
-<<<<<<< Updated upstream
         //printf("Move attempt: pos=(%.2f, %.2f, %.2f), dx=%.4f, dy=%.4f, dz=%.4f, dt=%.4f\n",gameState.posX, gameState.posY, gameState.posZ, dx, dy, dz, gameState.dt);
-=======
-        printf("Move attempt: pos=(%.2f, %.2f, %.2f), dx=%.4f, dy=%.4f, dz=%.4f, dt=%.4f\n",
-               gameState.posX, gameState.posY, gameState.posZ, dx, dy, dz, gameState.dt);
->>>>>>> Stashed changes
         for (double f = 0.0; f < 7.0; f += 1.0)
         {
             float factor = 1.0f / powf(2.0f, f);
@@ -192,12 +159,7 @@ void updateMovement()
             float testY = gameState.posY + dy * factor;
             float testZ = gameState.posZ + dz * factor;
             int isCollision = checkCollision(testX, testY, testZ);
-<<<<<<< Updated upstream
             // printf("  Step %.4f: test=(%.2f, %.2f, %.2f), collision=%d, canClip=%d\n",factor, testX, testY, testZ, isCollision, gameState.canClip);
-=======
-            printf("  Step %.4f: test=(%.2f, %.2f, %.2f), collision=%d, canClip=%d\n",
-                   factor, testX, testY, testZ, isCollision, gameState.canClip);
->>>>>>> Stashed changes
             if (!isCollision || gameState.canClip)
             {
                 gameState.posX = testX;
@@ -209,11 +171,7 @@ void updateMovement()
         }
         if (collided)
         {
-<<<<<<< Updated upstream
             // printf("Collision stopped movement!\n");
-=======
-            printf("Collision stopped movement!\n");
->>>>>>> Stashed changes
         }
     }
 
