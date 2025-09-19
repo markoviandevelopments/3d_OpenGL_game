@@ -1,14 +1,11 @@
 #include "init.h"
 #include "input.h"
 #include "physics.h"
+#include "game.h"
 #include "draw.h"
 #include <GL/glut.h>
 #include <GL/glu.h>
 
-// Ensure M_PI is defined if not included from game.h
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
-#endif
 
 void initGL(void)
 {

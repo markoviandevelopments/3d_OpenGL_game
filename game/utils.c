@@ -1,7 +1,7 @@
 #include "utils.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/freeglut.h> // Changed from <GL/glut.h>
+#include <GL/freeglut.h>
 #include <stdio.h>
 #include <string.h>
 

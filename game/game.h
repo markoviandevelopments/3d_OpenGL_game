@@ -23,7 +23,7 @@
 #define AGENT_SERVER_PORT 8099
 #define HEARTBEAT_INTERVAL 300
 #define FPS 60
-#define FRAME_INTERVAL_MS (1000 / FPS)
+#define FRAME_INTERVAL_MS 16
 
 typedef struct
 {

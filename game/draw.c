@@ -1,12 +1,9 @@
 #include "draw.h"
 #include "utils.h"
+#include "game.h"
 #include <stdio.h>
 #include <string.h>
 
-// Ensure M_PI is defined if not included from game.h
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
-#endif
 
 void drawCubeBase(float x, float y, float z, float r, float g, float b, float a, int drawEdges)
 {

@@ -1,4 +1,5 @@
 #include "network.h"
+#include "input.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -7,6 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <float.h>
 
 void initNetwork(void)
 {
@@ -72,18 +74,61 @@ void initNetwork(void)
 
 void timer(int value)
 {
+    static double lastTime = 0.0;
+    double currentTime = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+    gameState.dt = currentTime - lastTime;
+    if (gameState.dt > 0.05)
+        gameState.dt = 0.05;
+    lastTime = currentTime;
+
+    updateRotation();
+    updateMovement();
+
     struct sockaddr_in fromAddr;
     socklen_t fromLen = sizeof(fromAddr);
     ssize_t ret = recvfrom(gameState.clientSock, &gameState.serverMessage, sizeof(ServerMessage), 0,
                            (struct sockaddr *)&fromAddr, &fromLen);
-    if (ret < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
-    {
-        fprintf(stderr, "Main server receive failed: %s (errno: %d)\n", strerror(errno), errno);
-    }
-    else if (ret > 0)
+    if (ret > 0)
     {
         gameState.cubeX = gameState.serverMessage.browniancube[0];
         gameState.cubeY = gameState.serverMessage.browniancube[1];
+
+        int matchedIndex = -1;
+        float minDiff = FLT_MAX;
+        for (int i = 0; i < MAX_CLIENTS; i++)
+        {
+            if (gameState.serverMessage.playerinfo[i].exists)
+            {
+                float serverX = gameState.serverMessage.playerinfo[i].position.x;
+                float serverY = gameState.serverMessage.playerinfo[i].position.y;
+                float serverZ = gameState.serverMessage.playerinfo[i].position.z;
+                float diff = fabs(serverX - gameState.posX) + fabs(serverY - gameState.posY) + fabs(serverZ - gameState.posZ);
+                printf("Playerinfo[%d]: server=(%.2f, %.2f, %.2f), local=(%.2f, %.2f, %.2f), diff=%.4f\n",
+                       i, serverX, serverY, serverZ, gameState.posX, gameState.posY, gameState.posZ, diff);
+                if (diff < minDiff && diff < 0.2f)
+                {
+                    minDiff = diff;
+                    matchedIndex = i;
+                }
+            }
+        }
+
+        if (matchedIndex != -1)
+        {
+            printf("Matched index %d with diff %.4f\n", matchedIndex, minDiff);
+            float serverX = gameState.serverMessage.playerinfo[matchedIndex].position.x;
+            float serverY = gameState.serverMessage.playerinfo[matchedIndex].position.y;
+            float serverZ = gameState.serverMessage.playerinfo[matchedIndex].position.z;
+            float lerpFactor = 0.05f;
+            gameState.posX += (serverX - gameState.posX) * lerpFactor;
+            gameState.posY += (serverY - gameState.posY) * lerpFactor;
+            gameState.posZ += (serverZ - gameState.posZ) * lerpFactor;
+            printf("Interpolated to: (%.2f, %.2f, %.2f)\n", gameState.posX, gameState.posY, gameState.posZ);
+        }
+        else
+        {
+            printf("No matching playerinfo - skipping interpolation\n");
+        }
     }
 
     gameState.clientMessage.command = gameState.message;
@@ -112,7 +157,6 @@ void timer(int value)
     else
     {
         printf("Agent Server received %zd bytes\n", bytesReceived);
-        // Update game state with received agent data
         gameState.agents = gameState.agentServerInfo.agents;
     }
 

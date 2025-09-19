@@ -18,7 +18,7 @@ GameState gameState = {
     .velY = 0.0f,
     .velZ = 0.0f,
     .useVelocity = 0,
-    .canClip = 0,
+    .canClip = 1,
     .speedV = 50.0f,
     .dt = 0.01f,
     .cubeX = 5.0f,
@@ -37,6 +37,9 @@ int main(int argc, char **argv)
     glutReshapeFunc(reshape);
     glutSpecialFunc(specialKeys);
     glutKeyboardFunc(keyboard);
+    glutKeyboardUpFunc(keyboardUp);
+    glutSpecialFunc(specialKeys);
+    glutSpecialUpFunc(specialKeysUp);
     glutTimerFunc(0, timer, 0);
     glutMainLoop();
 
