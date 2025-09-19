@@ -5,7 +5,6 @@
 typedef struct {
     float x;
     float y;
-    // float r;
     // float food;
     // float x_move_c;
     // float y_move_c;
