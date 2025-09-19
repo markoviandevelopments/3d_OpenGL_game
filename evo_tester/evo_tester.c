@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 #define GRID_W 10
 #define GRID_H 10
 #define NUM_AGENTS 100
+#define LOAD_FROM_FILE 0
+
+FILE *fptr;
 
 
 typedef struct {
@@ -93,23 +97,36 @@ int main(){
 
     srand(time(NULL));
     Agent agent[NUM_AGENTS];
-    for (int i=0;i<NUM_AGENTS;i++) {
-        initialize_random_agent(&agent[i]);
-        printf("Index: %d x: %f, y: %f, food: %f, x_move_c: %f, y_move_c: %f\n", i, agent[i].x, agent[i].y,agent[i].food,agent[i].x_move_c,agent[i].y_move_c);
-    
+    if (LOAD_FROM_FILE) {
+        fptr = fopen("data.bin", "r");
+        fread(&agent[NUM_AGENTS],sizeof(Agent) * (unsigned long) NUM_AGENTS,1,fptr);
+        fclose(fptr);
+    } else {
+        for (int i=0;i<NUM_AGENTS;i++) {
+            initialize_random_agent(&agent[i]);
+            printf("Index: %d x: %f, y: %f, food: %f, x_move_c: %f, y_move_c: %f\n", i, agent[i].x, agent[i].y,agent[i].food,agent[i].x_move_c,agent[i].y_move_c);
+        }
     }
 
-    Agent optimal_agent = {
-    .x = 0.5f,         // Start in the middle of a grid cell (e.g., cell [5,5])
-    .y = 0.5f,         // Middle of a grid cell for balanced exploration
-    .food = 50.0f,     // Same initial food as random agents
-    .x_move_c = 1.0f,  // Always move in x-direction to explore food hotspots
-    .y_move_c = 1.0f   // Always move in y-direction to explore food hotspots
-    };
+    // Agent optimal_agent = {
+    // .x = 0.5f,         // Start in the middle of a grid cell (e.g., cell [5,5])
+    // .y = 0.5f,         // Middle of a grid cell for balanced exploration
+    // .food = 50.0f,     // Same initial food as random agents
+    // .x_move_c = 1.0f,  // Always move in x-direction to explore food hotspots
+    // .y_move_c = 1.0f   // Always move in y-direction to explore food hotspots
+    // };
 
-    agent[0] = optimal_agent;
+    // agent[0] = optimal_agent;
 
-    for (int j=0;j<100000;j++) {
+    fptr = fopen("data.bin", "w");
+    fclose(fptr);
+
+    for (int j=0;j<1;j++) {
+        if (j % 100 == 0) {
+            fptr = fopen("data.bin", "w");
+            fwrite(&agent[NUM_AGENTS],sizeof(Agent) * (unsigned long) NUM_AGENTS,1,fptr);
+            fclose(fptr);
+        }
         printf("~~~~~~~~~~~~ITERATION %d~~~~~~~~~~~\n", j);
         for (int i=0;i<NUM_AGENTS;i++) {
             agent_move(&agent[i]);
@@ -117,8 +134,19 @@ int main(){
             agent[i].food -= 0.1f;
             if (agent[i].food < 0.0f) {
                 agent[i].food = 0.0f;
-                agent[i].x_move_c = agent[rand()% NUM_AGENTS].x_move_c;
-                agent[i].y_move_c = agent[rand()% NUM_AGENTS].y_move_c;
+                int rand_agent_index = rand()% NUM_AGENTS;
+                agent[i].x_move_c = agent[rand_agent_index].x_move_c;
+                agent[i].y_move_c = agent[rand_agent_index].y_move_c;
+                if (rand() % 4 == 0) {
+                    agent[i].x_move_c += ((float) (rand() % 1000)) / 1000.0f * 0.2f - 0.1f * ((float) pow(2, (double) (-2 * (rand() % 10))));
+                    if (agent[i].x_move_c < 0.0f) agent[i].x_move_c = 0.0f;
+                    if (agent[i].x_move_c > 1.0f) agent[i].x_move_c = 1.0f;
+                }
+                if (rand() % 4 == 0) {
+                    agent[i].y_move_c += ((float) (rand() % 1000)) / 1000.0f * 0.2f - 0.1f * ((float) pow(2, (double) (-2 * (rand() % 10))));
+                    if (agent[i].y_move_c < 0.0f) agent[i].y_move_c = 0.0f;
+                    if (agent[i].y_move_c > 1.0f) agent[i].y_move_c = 1.0f;
+                }
             }
             
             
@@ -126,6 +154,7 @@ int main(){
 
         }
         add_food_to_environment();
+
     }
     
     
