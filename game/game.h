@@ -28,7 +28,7 @@
 typedef struct
 {
     float x, y;
-    float r,g,b;
+    float r, g, b;
 } Agent;
 
 typedef struct
@@ -121,6 +121,8 @@ typedef struct
     FoodGrid foodGrid;
     Planet planets[3];
     GLuint objList2;
+    GLuint avatarList;
+    GLuint avatarTexture;
 } GameState;
 
 extern GameState gameState;

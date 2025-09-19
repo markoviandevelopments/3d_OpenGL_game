@@ -508,7 +508,7 @@ void display(void)
     for (int i = 0; i < 10; i++)
     {
         Agent agent = gameState.agents.agent[i];
-        drawCubeBaseWidthSpec(agent.x + 25.0f, agent.y + 5.0f, 0.201f, agent.r, agent.g, agent.b, 1.0f,1,0.2f);
+        drawCubeBaseWidthSpec(agent.x + 25.0f, agent.y + 5.0f, 0.201f, agent.r, agent.g, agent.b, 1.0f, 1, 0.2f);
     }
 
     for (int i = 0; i < 25; i++)
@@ -519,11 +519,11 @@ void display(void)
 
     // Planets
     float animTime = gameState.currentTime / 1000.0f;
-    drawPatternedSphere(gameState.planets[0].x, gameState.planets[0].y, gameState.planets[0].z, gameState.planets[0].radius, 20, 20, animTime, 0);
+    drawPatternedSphere(gameState.planets[0].x, gameState.planets[1].y, gameState.planets[0].z, gameState.planets[0].radius, 20, 20, animTime, 0);
     drawPatternedSphere(gameState.planets[1].x, gameState.planets[1].y, gameState.planets[1].z, gameState.planets[1].radius, 30, 25, animTime, 1);
     drawPatternedSphere(gameState.planets[2].x, gameState.planets[2].y, gameState.planets[2].z, gameState.planets[2].radius, 40, 30, animTime, 2);
 
-    // OBJ model
+    // OBJ model (eprod.obj)
     if (gameState.objList != 0)
     {
         if (gameState.frameCount % 20 == 0)
@@ -546,7 +546,8 @@ void display(void)
         glPopMatrix();
     }
 
-        if (gameState.objList2 != 0)
+    // OBJ model (prestoncoin.obj)
+    if (gameState.objList2 != 0)
     {
         if (gameState.frameCount % 20 == 0)
         {
@@ -568,8 +569,17 @@ void display(void)
         glPopMatrix();
     }
 
-    // Player cube
-    drawSolidCube(gameState.cubeX, gameState.cubeY, 0.51f, 0.5f, 0.5f, 1.0f, 0.5f);
+    // Player toad (replacing cube)
+    if (gameState.avatarList != 0)
+    {
+        glPushMatrix();
+        glTranslatef(gameState.cubeX, gameState.cubeY, 0.51f); // Match cube position
+        glScalef(0.05f, 0.05f, 0.05f);                         // Adjust scale for toad size
+        glBindTexture(GL_TEXTURE_2D, gameState.avatarTexture);
+        glCallList(gameState.avatarList);
+        glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+        glPopMatrix();
+    }
 
     // Other players
     for (int i = 0; i < MAX_CLIENTS; i++)
