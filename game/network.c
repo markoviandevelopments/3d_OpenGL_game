@@ -103,8 +103,7 @@ void timer(int value)
                 float serverY = gameState.serverMessage.playerinfo[i].position.y;
                 float serverZ = gameState.serverMessage.playerinfo[i].position.z;
                 float diff = fabs(serverX - gameState.posX) + fabs(serverY - gameState.posY) + fabs(serverZ - gameState.posZ);
-                printf("Playerinfo[%d]: server=(%.2f, %.2f, %.2f), local=(%.2f, %.2f, %.2f), diff=%.4f\n",
-                       i, serverX, serverY, serverZ, gameState.posX, gameState.posY, gameState.posZ, diff);
+                //printf("Playerinfo[%d]: server=(%.2f, %.2f, %.2f), local=(%.2f, %.2f, %.2f), diff=%.4f\n", i, serverX, serverY, serverZ, gameState.posX, gameState.posY, gameState.posZ, diff);
                 if (diff < minDiff && diff < 0.2f)
                 {
                     minDiff = diff;
@@ -123,7 +122,7 @@ void timer(int value)
             gameState.posX += (serverX - gameState.posX) * lerpFactor;
             gameState.posY += (serverY - gameState.posY) * lerpFactor;
             gameState.posZ += (serverZ - gameState.posZ) * lerpFactor;
-            printf("Interpolated to: (%.2f, %.2f, %.2f)\n", gameState.posX, gameState.posY, gameState.posZ);
+            // printf("Interpolated to: (%.2f, %.2f, %.2f)\n", gameState.posX, gameState.posY, gameState.posZ);
         }
         else
         {

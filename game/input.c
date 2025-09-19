@@ -134,18 +134,18 @@ void updateMovement()
 
     if (gameState.useVelocity)
     {
-        gameState.velX += gameState.speedV * dx * gameState.dt / 0.05f;
-        gameState.velY += gameState.speedV * dy * gameState.dt / 0.05f;
-        gameState.velZ += gameState.speedV * dz * gameState.dt / 0.05f;
+        gameState.velX += gameState.speedV * dx * gameState.dt / 0.0055f;
+        gameState.velY += gameState.speedV * dy * gameState.dt / 0.0055f;
+        gameState.velZ += gameState.speedV * dz * gameState.dt / 0.0055f;
         dx = gameState.velX * gameState.dt;
         dy = gameState.velY * gameState.dt;
         dz = gameState.velZ * gameState.dt;
     }
     else
     {
-        dx *= gameState.dt / 0.05f;
-        dy *= gameState.dt / 0.05f;
-        dz *= gameState.dt / 0.05f;
+        dx *= gameState.dt / 0.0055f;
+        dy *= gameState.dt / 0.0055f;
+        dz *= gameState.dt / 0.0055f;
     }
 
     int collided = 1;
