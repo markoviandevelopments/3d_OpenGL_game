@@ -9,7 +9,8 @@
 #endif
 
 bool keyStates[256] = {false};
-bool specialKeyStates[256] = {false}; // Define after includes, larger size
+bool specialKeyStates[256] = {false};
+float speedModifier;
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -44,11 +45,15 @@ void keyboard(unsigned char key, int x, int y)
     case 'k':
         gameState.message = 6;
         break;
+    case 'shift':
+        speedModifier = 0.005f;
+        break;
     case 27: // Escape
         exit(0);
         break;
     default:
         gameState.message = 1;
+        speedModifier = 0.008f;
         break;
     }
 }
@@ -85,7 +90,7 @@ void updateRotation()
 
     if (specialKeyStates[GLUT_KEY_UP])
     {
-        gameState.rotateX -= rotateSpeed * dt / 0.1f; // Was 0.005f
+        gameState.rotateX -= rotateSpeed * dt / 0.1f;
     }
     if (specialKeyStates[GLUT_KEY_DOWN])
     {
