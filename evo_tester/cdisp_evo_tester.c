@@ -11,7 +11,7 @@
 #define LOAD_FROM_FILE 0
 #define WINDOW_WIDTH 1000
 #define WINDOW_HEIGHT 1000
-#define CAN_MUTATE 0
+#define CAN_MUTATE 1
 
 typedef struct {
     float food[GRID_H][GRID_W];
@@ -42,7 +42,7 @@ void initialize_random_agent(Agent *agent, int id) {
         agent->nodes[i] = temp;
     }
     for (int i = 0; i < 12; i++) {
-        float temp = ((float)(rand() % 1000)) / 1000.0f * 4.0f - 2.0f;
+        float temp = ((float)(rand() % 1000)) / 1000.0f * 12.0f - 6.0f;
         agent->weights[i] = temp;
     }
     agent->can_die = 1;
@@ -288,9 +288,9 @@ int main() {
                         for (int n = 0; n < 12; n++) {
                             agent[i].weights[n] = agent[rand_agent_index].weights[n];
                             if (rand() % 12 == 0 && any_mut) {
-                                agent[i].weights[n] += (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * random_mag;
-                                if (agent[i].weights[n] > 2.0f) agent[i].weights[n] = 2.0f;
-                                if (agent[i].weights[n] < -2.0f) agent[i].weights[n] = -2.0f;
+                                agent[i].weights[n] += (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 12.0f * random_mag;
+                                if (agent[i].weights[n] > 6.0f) agent[i].weights[n] = 6.0f;
+                                if (agent[i].weights[n] < -6.0f) agent[i].weights[n] = -6.0f;
                             }
                         }
                     }
