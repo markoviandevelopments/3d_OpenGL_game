@@ -11,6 +11,7 @@
 #define LOAD_FROM_FILE 0
 #define WINDOW_WIDTH 1000
 #define WINDOW_HEIGHT 1000
+#define CAN_MUTATE 0
 
 typedef struct {
     float food[GRID_H][GRID_W];
@@ -25,11 +26,13 @@ typedef struct {
     float nodes[4];
     float nodes_i[4];
     float weights[12];
+    int can_die;
+    int id;
 } Agent;
 
 GLFWwindow* window;
 
-void initialize_random_agent(Agent *agent) {
+void initialize_random_agent(Agent *agent, int id) {
     agent->x = ((float)(rand() % 1000)) / 1000.0f;
     agent->y = ((float)(rand() % 1000)) / 1000.0f;
     agent->food = 50.0f;
@@ -42,6 +45,8 @@ void initialize_random_agent(Agent *agent) {
         float temp = ((float)(rand() % 1000)) / 1000.0f * 4.0f - 2.0f;
         agent->weights[i] = temp;
     }
+    agent->can_die = 1;
+    agent->id = id;
 }
 
 void agent_eat(Agent *agent) {
@@ -90,7 +95,7 @@ void agent_move(Agent *agent) {
         // }
         nodes_sum += agent->nodes[i];
     }
-    float r = (((float)(rand() % 1000)) / 1000.0f - 0.5f) * nodes_sum;
+    float r = (((float)(rand() % 1000)) / 1000.0f) * nodes_sum;
 
     if (r < agent->nodes[0]){
         agent->x += 0.01f;
@@ -192,6 +197,9 @@ void render_agents(const Agent *agents) {
     glBegin(GL_POINTS);
     glColor3f(1.0f, 1.0f, 1.0f); // White agents
     for (int i = 0; i < NUM_AGENTS; i++) {
+        if (agents[i].id == 999) {
+            glColor3f(1.0f, 0.0f, 0.0f);
+        }
         glVertex2f(agents[i].x, agents[i].y);
     }
     glEnd();
@@ -211,16 +219,46 @@ int main() {
         if (load_agents_from_file(agent, "data.bin") != 0) {
             fprintf(stderr, "Failed to load agents, initializing new agents\n");
             for (int i = 0; i < NUM_AGENTS; i++) {
-                initialize_random_agent(&agent[i]);
+                initialize_random_agent(&agent[i], i);
             }
         }
     } else {
         for (int i = 0; i < NUM_AGENTS; i++) {
-            initialize_random_agent(&agent[i]);
+            initialize_random_agent(&agent[i], i);
             printf("Index: %d x: %f, y: %f, food: %f\n",
                    i, agent[i].x, agent[i].y, agent[i].food);
         }
     }
+
+    Agent optimal_agent = {
+    .x = 0.5f,          // Start in the center of the grid
+    .y = 0.5f,          // Start in the center of the grid
+    .food = 50.0f,      // Same initial food as other agents
+    .nodes = {0.5f, 0.5f, 0.5f, 0.5f}, // Balanced initial node values
+    .nodes_i = {0.5f, 0.5f, 0.5f, 0.5f}, // Balanced initial node inputs
+    .weights = {
+        // Node 0 (right) influences: node 1 (up), node 2 (left), node 3 (down)
+        1.5f,  // node 0 -> node 1: strong influence to transition to up
+        0.2f,  // node 0 -> node 2: weak influence
+        0.2f,  // node 0 -> node 3: weak influence
+        // Node 1 (up) influences: node 0 (right), node 2 (left), node 3 (down)
+        0.2f,  // node 1 -> node 0: weak influence
+        1.5f,  // node 1 -> node 2: strong influence to transition to left
+        0.2f,  // node 1 -> node 3: weak influence
+        // Node 2 (left) influences: node 0 (right), node 1 (up), node 3 (down)
+        0.2f,  // node 2 -> node 0: weak influence
+        0.2f,  // node 2 -> node 1: weak influence
+        1.5f,  // node 2 -> node 3: strong influence to transition to down
+        // Node 3 (down) influences: node 0 (right), node 1 (up), node 2 (left)
+        1.5f,  // node 3 -> node 0: strong influence to transition to right
+        0.2f,  // node 3 -> node 1: weak influence
+        0.2f   // node 3 -> node 2: weak influence
+    },
+    .can_die = 0,        // Prevent resetting to maintain optimized parameters
+    .id = 999
+    };
+
+    agent[999] = optimal_agent;
 
     init_opengl();
     double last_time = glfwGetTime();
@@ -233,25 +271,27 @@ int main() {
                 agent_move(&agent[i]);
                 agent_eat(&agent[i]);
                 agent[i].food -= 0.1f;
-                if (agent[i].food < 0.0f) {
+                if (agent[i].food < 0.0f && agent[i].can_die) {
                     agent[i].food = 0.0f;
-                    int rand_agent_index = rand() % NUM_AGENTS;
-                    float random_mag = ((float)pow(2.0, -1.0f * ((double)(rand() % 10))));
-                    int any_mut = rand() % 2;
-                    for (int n = 0; n < 4; n++) {
-                        agent[i].nodes_i[n] = agent[rand_agent_index].nodes_i[n];
-                        if (rand() % 4 == 0 && any_mut) {
-                            agent[i].nodes_i[n] += (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * random_mag;
-                            if (agent[i].nodes_i[n] > 1.0f) agent[i].nodes_i[n] = 1.0f;
-                            if (agent[i].nodes_i[n] < -1.0f) agent[i].nodes_i[n] = -1.0f;
+                    if (CAN_MUTATE) {
+                        int rand_agent_index = rand() % NUM_AGENTS;
+                        float random_mag = ((float)pow(2.0, -1.0f * ((double)(rand() % 10))));
+                        int any_mut = rand() % 2;
+                        for (int n = 0; n < 4; n++) {
+                            agent[i].nodes_i[n] = agent[rand_agent_index].nodes_i[n];
+                            if (rand() % 4 == 0 && any_mut) {
+                                agent[i].nodes_i[n] += (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * random_mag;
+                                if (agent[i].nodes_i[n] > 1.0f) agent[i].nodes_i[n] = 1.0f;
+                                if (agent[i].nodes_i[n] < -1.0f) agent[i].nodes_i[n] = -1.0f;
+                            }
                         }
-                    }
-                    for (int n = 0; n < 12; n++) {
-                        agent[i].weights[n] = agent[rand_agent_index].weights[n];
-                        if (rand() % 16 == 0 && any_mut) {
-                            agent[i].weights[n] += (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * random_mag;
-                            if (agent[i].weights[n] > 2.0f) agent[i].weights[n] = 2.0f;
-                            if (agent[i].weights[n] < -2.0f) agent[i].weights[n] = -2.0f;
+                        for (int n = 0; n < 12; n++) {
+                            agent[i].weights[n] = agent[rand_agent_index].weights[n];
+                            if (rand() % 12 == 0 && any_mut) {
+                                agent[i].weights[n] += (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * random_mag;
+                                if (agent[i].weights[n] > 2.0f) agent[i].weights[n] = 2.0f;
+                                if (agent[i].weights[n] < -2.0f) agent[i].weights[n] = -2.0f;
+                            }
                         }
                     }
                 }
