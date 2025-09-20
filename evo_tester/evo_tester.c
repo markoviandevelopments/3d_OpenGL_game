@@ -3,9 +3,9 @@
 #include <time.h>
 #include <math.h>
 
-#define GRID_W 20
-#define GRID_H 20
-#define NUM_AGENTS 100
+#define GRID_W 40
+#define GRID_H 40
+#define NUM_AGENTS 1000
 #define LOAD_FROM_FILE 0
 
 
@@ -97,7 +97,7 @@ void agent_move(Agent *agent) {
 }
 
 void add_food_to_environment() {
-    for (int i=0;i<27;i++) {
+    for (int i=0;i<20;i++) {
         int x_index = rand() % GRID_W;
         int y_index = rand() % GRID_H;
         environment.food[y_index][x_index] += 0.1f * ((float) (NUM_AGENTS));
@@ -190,7 +190,7 @@ int main(){
 
 
     for (int j=0;j<100000;j++) {
-        if (j % 1000 == 0)
+        if (j % 10000 == 0)
         {
             if (save_agents_to_file(agent, "data.bin") != 0)
             {
