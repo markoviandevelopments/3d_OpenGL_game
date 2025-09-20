@@ -193,7 +193,7 @@ void init_opengl() {
 
 void render_agents(const Agent *agents) {
     glClear(GL_COLOR_BUFFER_BIT);
-    glPointSize(2.0f); // 2x2 pixel agents
+    glPointSize(4.0f);
     glBegin(GL_POINTS);
     glColor3f(1.0f, 1.0f, 1.0f); // White agents
     for (int i = 0; i < NUM_AGENTS; i++) {
