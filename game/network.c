@@ -22,7 +22,7 @@ void initNetwork(void)
 
     gameState.serverAddr.sin_family = AF_INET;
     gameState.serverAddr.sin_port = htons(8042);
-    gameState.serverAddr.sin_addr.s_addr = inet_addr("192.168.1.126"); // Match server IP
+    gameState.serverAddr.sin_addr.s_addr = inet_addr("192.168.1.126");
     gameState.addrLen = sizeof(gameState.serverAddr);
 
     gameState.clientMessage.command = 1;
@@ -45,8 +45,8 @@ void initNetwork(void)
     fcntl(gameState.sockFd, F_SETFL, O_NONBLOCK);
 
     gameState.agentServerAddr.sin_family = AF_INET;
-    gameState.agentServerAddr.sin_addr.s_addr = inet_addr("192.168.1.126"); // Match server IP
-    gameState.agentServerAddr.sin_port = htons(8099);                       // Match agent_server.c
+    gameState.agentServerAddr.sin_addr.s_addr = inet_addr("192.168.1.126");
+    gameState.agentServerAddr.sin_port = htons(8099);
 
     struct sockaddr_in localAddr = {0};
     localAddr.sin_family = AF_INET;
@@ -81,6 +81,7 @@ void timer(int value)
         gameState.dt = 0.05;
     lastTime = currentTime;
 
+    updateSpeedModifier(); // Update Shift key state
     updateRotation();
     updateMovement();
 
@@ -103,7 +104,6 @@ void timer(int value)
                 float serverY = gameState.serverMessage.playerinfo[i].position.y;
                 float serverZ = gameState.serverMessage.playerinfo[i].position.z;
                 float diff = fabs(serverX - gameState.posX) + fabs(serverY - gameState.posY) + fabs(serverZ - gameState.posZ);
-                //printf("Playerinfo[%d]: server=(%.2f, %.2f, %.2f), local=(%.2f, %.2f, %.2f), diff=%.4f\n", i, serverX, serverY, serverZ, gameState.posX, gameState.posY, gameState.posZ, diff);
                 if (diff < minDiff && diff < 0.2f)
                 {
                     minDiff = diff;
@@ -122,7 +122,6 @@ void timer(int value)
             gameState.posX += (serverX - gameState.posX) * lerpFactor;
             gameState.posY += (serverY - gameState.posY) * lerpFactor;
             gameState.posZ += (serverZ - gameState.posZ) * lerpFactor;
-            // printf("Interpolated to: (%.2f, %.2f, %.2f)\n", gameState.posX, gameState.posY, gameState.posZ);
         }
         else
         {

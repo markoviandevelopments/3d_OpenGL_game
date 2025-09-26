@@ -10,8 +10,25 @@
 
 bool keyStates[256] = {false};
 bool specialKeyStates[256] = {false};
+<<<<<<< Updated upstream
 bool isShiftHeld = false;
 float speedModifier;
+=======
+float speedModifier = 0.008f; // Default value
+
+void updateSpeedModifier()
+{
+    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT)
+    {
+        speedModifier = 0.008f;
+    }
+    else
+    {
+        speedModifier = 0.005f;
+    }
+    // printf("speedModifier = %.4f\n", speedModifier);
+}
+>>>>>>> Stashed changes
 
 
 void keyboard(unsigned char key, int x, int y)
@@ -53,7 +70,6 @@ void keyboard(unsigned char key, int x, int y)
         break;
     default:
         gameState.message = 1;
-        speedModifier = 0.008f;
         break;
     }
 }
@@ -144,24 +160,29 @@ void updateMovement()
 
     if (gameState.useVelocity)
     {
+<<<<<<< Updated upstream
         gameState.velX += gameState.speedV * sprintMultiplier * dx * gameState.dt / 0.0055f;
         gameState.velY += gameState.speedV * sprintMultiplier * dy * gameState.dt / 0.0055f;
         gameState.velZ += gameState.speedV * sprintMultiplier * dz * gameState.dt / 0.0055f;
+=======
+        gameState.velX += gameState.speedV * dx * gameState.dt / speedModifier;
+        gameState.velY += gameState.speedV * dy * gameState.dt / speedModifier;
+        gameState.velZ += gameState.speedV * dz * gameState.dt / speedModifier;
+>>>>>>> Stashed changes
         dx = gameState.velX * gameState.dt;
         dy = gameState.velY * gameState.dt;
         dz = gameState.velZ * gameState.dt;
     }
     else
     {
-        dx *= gameState.dt / 0.0055f;
-        dy *= gameState.dt / 0.0055f;
-        dz *= gameState.dt / 0.0055f;
+        dx *= gameState.dt / speedModifier;
+        dy *= gameState.dt / speedModifier;
+        dz *= gameState.dt / speedModifier;
     }
 
     int collided = 1;
     if (dx != 0.0f || dy != 0.0f || dz != 0.0f)
     {
-        //printf("Move attempt: pos=(%.2f, %.2f, %.2f), dx=%.4f, dy=%.4f, dz=%.4f, dt=%.4f\n",gameState.posX, gameState.posY, gameState.posZ, dx, dy, dz, gameState.dt);
         for (double f = 0.0; f < 7.0; f += 1.0)
         {
             float factor = 1.0f / powf(2.0f, f);
@@ -169,7 +190,6 @@ void updateMovement()
             float testY = gameState.posY + dy * factor;
             float testZ = gameState.posZ + dz * factor;
             int isCollision = checkCollision(testX, testY, testZ);
-            // printf("  Step %.4f: test=(%.2f, %.2f, %.2f), collision=%d, canClip=%d\n",factor, testX, testY, testZ, isCollision, gameState.canClip);
             if (!isCollision || gameState.canClip)
             {
                 gameState.posX = testX;
@@ -190,7 +210,6 @@ void updateMovement()
         gameState.velX = gameState.velY = gameState.velZ = 0.0f;
     }
 
-    // Add gravity (moved from updatePhysics)
     if (gameState.useVelocity)
     {
         for (int i = 0; i < 3; i++)
