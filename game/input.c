@@ -10,32 +10,8 @@
 
 bool keyStates[256] = {false};
 bool specialKeyStates[256] = {false};
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 bool isShiftHeld = false;
-float speedModifier;
-=======
-=======
->>>>>>> Stashed changes
 float speedModifier = 0.008f; // Default value
-
-void updateSpeedModifier()
-{
-    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT)
-    {
-        speedModifier = 0.008f;
-    }
-    else
-    {
-        speedModifier = 0.005f;
-    }
-    // printf("speedModifier = %.4f\n", speedModifier);
-}
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-
-=======
->>>>>>> Stashed changes
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -142,7 +118,7 @@ void updateMovement()
     float moveSpeed = gameState.playerSpeed * 0.1f;
 
     // Apply sprint multiplier if Shift is held
-    float sprintMultiplier = isShiftHeld ? 2.0f : 1.0f; // Typical: 1.5x-2x boost
+    float sprintMultiplier = isShiftHeld ? 2.0f : 1.0f; // Typical: 1.5x-2x boost; adjust as needed
     moveSpeed *= sprintMultiplier;
 
     float forward = (keyStates['w'] ? 1.0f : 0.0f) - (keyStates['s'] ? 1.0f : 0.0f);
@@ -158,7 +134,7 @@ void updateMovement()
 
     dx += forward * moveSpeed * cos(yaw) * cos(pitch);
     dy += forward * moveSpeed * sin(yaw) * cos(pitch);
-    dz += forward * moveSpeed * -sin(pitch);
+    dz += forward * moveSpeed * -sin(pitch); // Revert to -pitch if needed
 
     dx += strafe * moveSpeed * sin(yaw);
     dy += strafe * moveSpeed * -cos(yaw);
@@ -166,32 +142,20 @@ void updateMovement()
 
     if (gameState.useVelocity)
     {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+        // Apply sprint to acceleration in velocity mode
         gameState.velX += gameState.speedV * sprintMultiplier * dx * gameState.dt / 0.0055f;
         gameState.velY += gameState.speedV * sprintMultiplier * dy * gameState.dt / 0.0055f;
         gameState.velZ += gameState.speedV * sprintMultiplier * dz * gameState.dt / 0.0055f;
-=======
-        gameState.velX += gameState.speedV * dx * gameState.dt / speedModifier;
-        gameState.velY += gameState.speedV * dy * gameState.dt / speedModifier;
-        gameState.velZ += gameState.speedV * dz * gameState.dt / speedModifier;
->>>>>>> Stashed changes
-=======
-        gameState.velX += gameState.speedV * dx * gameState.dt / speedModifier;
-        gameState.velY += gameState.speedV * dy * gameState.dt / speedModifier;
-        gameState.velZ += gameState.speedV * dz * gameState.dt / speedModifier;
->>>>>>> Stashed changes
         dx = gameState.velX * gameState.dt;
         dy = gameState.velY * gameState.dt;
         dz = gameState.velZ * gameState.dt;
     }
     else
     {
-        dx *= gameState.dt / speedModifier;
-        dy *= gameState.dt / speedModifier;
-        dz *= gameState.dt / speedModifier;
+        dx *= gameState.dt / 0.0055f;
+        dy *= gameState.dt / 0.0055f;
+        dz *= gameState.dt / 0.0055f;
     }
-
     int collided = 1;
     if (dx != 0.0f || dy != 0.0f || dz != 0.0f)
     {

@@ -81,7 +81,6 @@ void timer(int value)
         gameState.dt = 0.05;
     lastTime = currentTime;
 
-    updateSpeedModifier(); // Update Shift key state
     updateRotation();
     updateMovement();
 
