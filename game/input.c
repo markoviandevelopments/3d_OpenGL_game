@@ -11,9 +11,12 @@
 bool keyStates[256] = {false};
 bool specialKeyStates[256] = {false};
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 bool isShiftHeld = false;
 float speedModifier;
 =======
+=======
+>>>>>>> Stashed changes
 float speedModifier = 0.008f; // Default value
 
 void updateSpeedModifier()
@@ -28,8 +31,11 @@ void updateSpeedModifier()
     }
     // printf("speedModifier = %.4f\n", speedModifier);
 }
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
 
+=======
+>>>>>>> Stashed changes
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -161,9 +167,15 @@ void updateMovement()
     if (gameState.useVelocity)
     {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         gameState.velX += gameState.speedV * sprintMultiplier * dx * gameState.dt / 0.0055f;
         gameState.velY += gameState.speedV * sprintMultiplier * dy * gameState.dt / 0.0055f;
         gameState.velZ += gameState.speedV * sprintMultiplier * dz * gameState.dt / 0.0055f;
+=======
+        gameState.velX += gameState.speedV * dx * gameState.dt / speedModifier;
+        gameState.velY += gameState.speedV * dy * gameState.dt / speedModifier;
+        gameState.velZ += gameState.speedV * dz * gameState.dt / speedModifier;
+>>>>>>> Stashed changes
 =======
         gameState.velX += gameState.speedV * dx * gameState.dt / speedModifier;
         gameState.velY += gameState.speedV * dy * gameState.dt / speedModifier;
