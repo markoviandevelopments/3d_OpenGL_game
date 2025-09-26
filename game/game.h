@@ -13,6 +13,7 @@
 #include <time.h>
 #include <string.h>
 #include <float.h>
+#include <stdbool.h>
 
 #define M_PI 3.14159265358979323846f
 #define MAX_CLIENTS 10
@@ -71,6 +72,7 @@ typedef struct
 {
     int command;
     Position position;
+    bool isSprinting;
 } ClientMessage;
 
 typedef struct

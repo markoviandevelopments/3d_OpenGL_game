@@ -9,13 +9,13 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
-#include <time.h> // For rand() and time()
+#include <time.h>
 #include <math.h>
 
 #define PORT 8042
 #define MAX_CLIENTS 10
 #define FPS 3
-#define CLIENT_TIMEOUT_SEC 5 // Timeout inactive clients after 5 seconds
+#define CLIENT_TIMEOUT_SEC 5
 
 float cubeX = 5.0f;
 float cubeY = 5.0f;
@@ -24,200 +24,248 @@ float speed = 0.05f;
 int message = 1;
 int prev_message = 1;
 
-struct Position {
+struct Position
+{
     float x;
     float y;
     float z;
 };
 
-struct ClientMessage {
+struct ClientMessage
+{
     int command;
     struct Position position;
+    bool isSprinting; // New: True if client is sprinting
 };
 
-// Client tracking struct
-struct Client {
+struct Client
+{
     struct sockaddr_in addr;
     time_t last_seen;
     struct Position position;
 };
 
-struct PlayerInfo {
+struct PlayerInfo
+{
     int exists;
     struct Position position;
 };
 
-struct ServerMessage {
-    float browniancube[2]; // x and y positions of cube on checkerboard
+struct ServerMessage
+{
+    float browniancube[2];
     struct PlayerInfo playerinfo[MAX_CLIENTS];
 };
-
 
 struct Client clients[MAX_CLIENTS];
 struct ClientMessage clientmessage;
 struct ServerMessage servermessage;
 int num_clients = 0;
 
-int checkCollision(float x_in, float y_in, float z_in) {
-    double x = (double) x_in;
-    double y = (double) y_in;
-    double z = (double) z_in;
+int checkCollision(float x_in, float y_in, float z_in)
+{
+    double x = (double)x_in;
+    double y = (double)y_in;
+    double z = (double)z_in;
 
-    //check collision with platform
     float dist = sqrt((x - 10.0) * (x - 10.0) + (y - 10.0) * (y - 10.0));
-    if (dist < 10.0 && z < 0.5 && z > -0.5) {
+    if (dist < 10.0 && z < 0.5 && z > -0.5)
+    {
         return 1;
     }
-    if (dist > 9.5 && dist < 10.5 && z < 1.0 && z > 0.0) {
+    if (dist > 9.5 && dist < 10.5 && z < 1.0 && z > 0.0)
+    {
         return 1;
     }
     return 0;
 }
 
-void physics() {
-    
-
-    if (message == 2) {
+void physics()
+{
+    if (message == 2)
+    {
         speed = 0.5f;
-    } else {
+    }
+    else
+    {
         speed = 0.01f;
     }
 
-    float dx = (((float) (rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * speed;
-    float dy = (((float) (rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * speed;
+    float dx = (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * speed;
+    float dy = (((float)(rand() % 1000)) / 1000.0f - 0.5f) * 2.0f * speed;
 
-    if (message == 3) {
+    if (message == 3)
+    {
         dx = -0.1f;
     }
-    if (message == 4) {
+    if (message == 4)
+    {
         dy = 0.1f;
     }
-    if (message == 5) {
+    if (message == 5)
+    {
         dx = 0.1f;
     }
-    if (message == 6) {
+    if (message == 6)
+    {
         dy = -0.1f;
     }
 
-    if (!checkCollision(cubeX + dx,cubeY + dy, 0.51f)) {
+    if (!checkCollision(cubeX + dx, cubeY + dy, 0.51f))
+    {
         cubeX += dx;
         cubeY += dy;
     }
-    
-    
-
 }
 
-// Check if client address already exists
-int client_exists(struct sockaddr_in *new_addr) {
-    for (int i = 0; i < num_clients; i++) {
-        if (memcmp(&clients[i].addr, new_addr, sizeof(struct sockaddr_in)) == 0) {
-            return i; // Return index if found
+int client_exists(struct sockaddr_in *new_addr)
+{
+    for (int i = 0; i < num_clients; i++)
+    {
+        if (memcmp(&clients[i].addr, new_addr, sizeof(struct sockaddr_in)) == 0)
+        {
+            return i;
         }
     }
     return -1;
 }
 
-int main() {
+int main()
+{
     int server_sock;
     struct sockaddr_in addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
     fd_set read_fds;
     int max_fd;
 
-    srand(time(NULL)); // Seed rand for physics
+    srand(time(NULL));
 
-    // Create UDP socket
     server_sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (server_sock < 0) {
+    if (server_sock < 0)
+    {
         perror("socket");
         return 1;
     }
 
-    // Set non-blocking
     fcntl(server_sock, F_SETFL, O_NONBLOCK);
 
-    // Bind to port
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = INADDR_ANY;
-    if (bind(server_sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (bind(server_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
         perror("bind");
         return 1;
     }
 
     printf("UDP Server listening on port %d\n", PORT);
 
-    while (1) {
+    while (1)
+    {
         FD_ZERO(&read_fds);
         FD_SET(server_sock, &read_fds);
         max_fd = server_sock;
 
-        // Select with timeout for ~60 FPS (16ms)
         struct timeval tv = {0, 1000000 / FPS};
         int activity = select(max_fd + 1, &read_fds, NULL, NULL, &tv);
 
-        if (activity < 0 && errno != EINTR) {
+        if (activity < 0 && errno != EINTR)
+        {
             perror("select");
         }
 
-        // Receive from clients (to discover/update them)
-        if (FD_ISSET(server_sock, &read_fds)) {
-            int ret = recvfrom(server_sock, &clientmessage, sizeof(int) + 3UL * sizeof(float), 0, (struct sockaddr*)&client_addr, &addr_len);
-            if (ret > 0) {
+        if (FD_ISSET(server_sock, &read_fds))
+        {
+            int ret = recvfrom(server_sock, &clientmessage, sizeof(struct ClientMessage), 0, (struct sockaddr *)&client_addr, &addr_len);
+            if (ret == sizeof(struct ClientMessage))
+            {
                 message = clientmessage.command;
                 int idx = client_exists(&client_addr);
-                if (idx == -1 && num_clients < MAX_CLIENTS) {
-                    // New client
+                float dt = 1.0f / FPS;        // Server tick time (~0.333s at 3 FPS)
+                float maxSpeed = 3.0f * 0.1f; // Match client: gameState.playerSpeed * 0.1f
+                if (clientmessage.isSprinting)
+                {
+                    maxSpeed *= 2.0f; // Match client sprint multiplier
+                }
+
+                // Validate movement distance
+                if (idx != -1)
+                {
+                    float dx = clientmessage.position.x - clients[idx].position.x;
+                    float dy = clientmessage.position.y - clients[idx].position.y;
+                    float dz = clientmessage.position.z - clients[idx].position.z;
+                    float dist = sqrtf(dx * dx + dy * dy + dz * dz);
+                    float maxDist = maxSpeed * dt * 1.1f; // 10% leeway for lag
+                    if (dist <= maxDist || message == 1)
+                    { // Allow command 1 (initial pos)
+                        clients[idx].last_seen = time(NULL);
+                        clients[idx].position.x = clientmessage.position.x;
+                        clients[idx].position.y = clientmessage.position.y;
+                        clients[idx].position.z = clientmessage.position.z;
+                    }
+                    else
+                    {
+                        printf("Invalid move from client %d: dist=%.4f, max=%.4f, sprint=%d\n",
+                               idx, dist, maxDist, clientmessage.isSprinting);
+                        // Keep old position (client will lerp to this)
+                    }
+                }
+                else if (num_clients < MAX_CLIENTS)
+                {
                     clients[num_clients].addr = client_addr;
                     clients[num_clients].last_seen = time(NULL);
+                    clients[num_clients].position.x = clientmessage.position.x;
+                    clients[num_clients].position.y = clientmessage.position.y;
+                    clients[num_clients].position.z = clientmessage.position.z;
+                    printf("New client from %s:%d\tAssigned ID: %d\n",
+                           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), num_clients);
                     num_clients++;
-                    printf("New client from %s:%d\tAssigned ID: %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),num_clients - 1);
-                } else if (idx != -1) {
-                    // Update existing
-                    clients[idx].last_seen = time(NULL);
-                    clients[idx].position.x = clientmessage.position.x;
-                    clients[idx].position.y = clientmessage.position.y;
-                    clients[idx].position.z = clientmessage.position.z;
-                    //printf("Client %d\tx: %.2f\ty: %.2f\tz: %.2f\n",idx,clients[idx].position.x,clients[idx].position.y,clients[idx].position.z);
                 }
+            }
+            else if (ret > 0)
+            {
+                printf("Invalid packet size: %d, expected %zu\n", ret, sizeof(struct ClientMessage));
             }
         }
 
-        // Update physics once per "frame"
         physics();
 
-        // Send position to all known clients
-        // float pos[2] = {cubeX, cubeY};
         servermessage.browniancube[0] = cubeX;
         servermessage.browniancube[1] = cubeY;
-        for (int i = 0; i < MAX_CLIENTS; i++) {
+        for (int i = 0; i < MAX_CLIENTS; i++)
+        {
             servermessage.playerinfo[i].exists = i < num_clients;
-            if(i < num_clients) {
+            if (i < num_clients)
+            {
                 servermessage.playerinfo[i].position.x = clients[i].position.x;
                 servermessage.playerinfo[i].position.y = clients[i].position.y;
                 servermessage.playerinfo[i].position.z = clients[i].position.z;
-            } else {
+            }
+            else
+            {
                 servermessage.playerinfo[i].position.x = 0.0f;
                 servermessage.playerinfo[i].position.y = 0.0f;
                 servermessage.playerinfo[i].position.z = 0.0f;
             }
         }
-        for (int i = 0; i < num_clients; i++) {
-            sendto(server_sock, &servermessage, sizeof(float) * 2 + (sizeof(int) + 3UL * sizeof(float)) * ((unsigned long) MAX_CLIENTS), 0, (struct sockaddr*)&clients[i].addr, sizeof(struct sockaddr_in));
+        for (int i = 0; i < num_clients; i++)
+        {
+            sendto(server_sock, &servermessage, sizeof(float) * 2 + (sizeof(int) + 3UL * sizeof(float)) * ((unsigned long)MAX_CLIENTS), 0,
+                   (struct sockaddr *)&clients[i].addr, sizeof(struct sockaddr_in));
         }
 
-        // Timeout inactive clients
         time_t now = time(NULL);
-        for (int i = 0; i < num_clients; i++) {
-            if (now - clients[i].last_seen > CLIENT_TIMEOUT_SEC) {
-                printf("Timed out client %s:%d\n", inet_ntoa(clients[i].addr.sin_addr), ntohs(clients[i].addr.sin_port));
-                // Remove by shifting
-                for (int j = i; j < num_clients - 1; j++) {
+        for (int i = 0; i < num_clients; i++)
+        {
+            if (now - clients[i].last_seen > CLIENT_TIMEOUT_SEC)
+            {
+                printf("Timed out client %s:%d\n", inet_ntoa(clients[i].addr.sin_addr), ntohs(client_addr.sin_port));
+                for (int j = i; j < num_clients - 1; j++)
+                {
                     clients[j] = clients[j + 1];
                 }
                 num_clients--;
-                i--; // Re-check index
+                i--;
             }
         }
     }

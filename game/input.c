@@ -10,10 +10,13 @@
 
 bool keyStates[256] = {false};
 bool specialKeyStates[256] = {false};
+bool isShiftHeld = false;
 float speedModifier;
+
 
 void keyboard(unsigned char key, int x, int y)
 {
+    isShiftHeld = (glutGetModifiers() & GLUT_ACTIVE_SHIFT) != 0;
     switch (key)
     {
     case 'w':
@@ -45,9 +48,6 @@ void keyboard(unsigned char key, int x, int y)
     case 'k':
         gameState.message = 6;
         break;
-    case 'shift':
-        speedModifier = 0.005f;
-        break;
     case 27: // Escape
         exit(0);
         break;
@@ -64,6 +64,7 @@ void keyboardUp(unsigned char key, int x, int y)
     {
         keyStates[key] = false;
     }
+    isShiftHeld = (glutGetModifiers() & GLUT_ACTIVE_SHIFT) != 0;
 }
 
 void specialKeys(int key, int x, int y)
@@ -118,6 +119,10 @@ void updateMovement()
     double pitch = gameState.rotateX * M_PI / 180.0;
     float moveSpeed = gameState.playerSpeed * 0.1f;
 
+    // Apply sprint multiplier if Shift is held
+    float sprintMultiplier = isShiftHeld ? 2.0f : 1.0f; // Typical: 1.5x-2x boost
+    moveSpeed *= sprintMultiplier;
+
     float forward = (keyStates['w'] ? 1.0f : 0.0f) - (keyStates['s'] ? 1.0f : 0.0f);
     float strafe = (keyStates['d'] ? 1.0f : 0.0f) - (keyStates['a'] ? 1.0f : 0.0f);
     float vertical = (keyStates['e'] ? 1.0f : 0.0f) - (keyStates['q'] ? 1.0f : 0.0f);
@@ -131,7 +136,7 @@ void updateMovement()
 
     dx += forward * moveSpeed * cos(yaw) * cos(pitch);
     dy += forward * moveSpeed * sin(yaw) * cos(pitch);
-    dz += forward * moveSpeed * -sin(pitch); // Revert to -pitch if needed
+    dz += forward * moveSpeed * -sin(pitch);
 
     dx += strafe * moveSpeed * sin(yaw);
     dy += strafe * moveSpeed * -cos(yaw);
@@ -139,9 +144,9 @@ void updateMovement()
 
     if (gameState.useVelocity)
     {
-        gameState.velX += gameState.speedV * dx * gameState.dt / 0.0055f;
-        gameState.velY += gameState.speedV * dy * gameState.dt / 0.0055f;
-        gameState.velZ += gameState.speedV * dz * gameState.dt / 0.0055f;
+        gameState.velX += gameState.speedV * sprintMultiplier * dx * gameState.dt / 0.0055f;
+        gameState.velY += gameState.speedV * sprintMultiplier * dy * gameState.dt / 0.0055f;
+        gameState.velZ += gameState.speedV * sprintMultiplier * dz * gameState.dt / 0.0055f;
         dx = gameState.velX * gameState.dt;
         dy = gameState.velY * gameState.dt;
         dz = gameState.velZ * gameState.dt;
